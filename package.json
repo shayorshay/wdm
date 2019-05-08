@@ -1,0 +1,8 @@
+{
+  "name": "wdm",
+  "version": "1.0.0",
+  "dependencies": {
+    "express": "^4.16.4",
+    "redis": "^2.8.0"
+  }
+}
