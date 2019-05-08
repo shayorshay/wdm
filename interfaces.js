@@ -1,17 +1,11 @@
 'use strict';
 
 const express = require('express');
-const crypto = require('crypto');
 
-const {redisClient, getAllIds, config} = require("./data");
 /**
  * @type {app}
  */
 const app = express();
-
-function genId(partition) {
-    return partition + ":" + crypto.randomBytes(20).toString('hex');
-}
 
 app.use(express.json());
 
@@ -52,75 +46,7 @@ app.use(express.json());
  * @property {number} credit
  */
 
-
-app.post("/users/create/", async function (req, res, next) {
-    /**
-     *
-     * @type {User}
-     */
-    const body = req.body;
-    const id = genId("usr");
-    body.id = id;
-
-    redisClient.hmset(id, body, function (err) {
-        if (err)
-            return next(err);
-
-        res.send({id});
-    });
-});
-
-
-app.delete("/users/remove/:id", function (req, res, next) {
-    /**
-     * @type {string}
-     */
-    const {id} = req.params;
-    /**
-     * @type {User}
-     */
-
-    redisClient.hdel(id, function (err) {
-        if (err)
-            return next(err);
-
-        res.sendStatus(200);
-    });
-});
-
-
-app.get("/users/find/", function (req, res, next) {
-    /**
-     * @type {string}
-     */
-    const ids = req.query.ids;
-    /**
-     * @type {User}
-     */
-
-    getAllIds(ids, function (err, objects) {
-        if (err)
-            return next(err);
-
-        res.send(objects.filter(e => e !== null));
-    });
-});
-
-app.get("/users/credit/:id", function (req, res, next) {
-    /**
-     * @type {string}
-     */
-    const {id} = req.params;
-    /**
-     * @type {User}
-     */
-
-    redisClient.hget(id, "credit", function (err, response) {
-        if (err)
-            return next(err);
-
-        res.send({credit: 0});
-    });
-});
+app.use("/users/", require("./handlers/users"));
+app.use("/stock/", require("./handlers/stock"));
 
 app.listen(8000);
