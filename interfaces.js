@@ -2,6 +2,8 @@
 
 const express = require('express');
 const crypto = require('crypto');
+
+const {redisClient, getAllIds, config} = require("./data");
 /**
  * @type {app}
  */
@@ -13,9 +15,6 @@ function genId(partition) {
 
 app.use(express.json());
 
-const redis = require("redis");
-
-const config = require("./config");
 
 // const EVENTS_QUEUE = 'events';
 //
@@ -45,11 +44,6 @@ const config = require("./config");
 //     });
 // });
 
-
-/**
- * @type {RedisClient}
- */
-const redisClient = redis.createClient(config.redis);
 
 /**
  * @class User
@@ -104,18 +98,11 @@ app.get("/users/find/", function (req, res, next) {
      * @type {User}
      */
 
-    const multi = redisClient.multi();
-
-    for (let id of ids) {
-        multi.hgetall(id)
-    }
-
-
-    multi.exec(function (err, replies) {
+    getAllIds(ids, function (err, objects) {
         if (err)
             return next(err);
 
-        res.send(replies.filter(e => e !== null));
+        res.send(objects.filter(e => e !== null));
     });
 });
 
