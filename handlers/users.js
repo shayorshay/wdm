@@ -1,7 +1,7 @@
 
 const express = require('express');
 const app = express();
-const {redisClient, getAllIds, config} = require("../data");
+const {redisClient, getAllIds, config, genId} = require("../data");
 
 
 app.post("/create/", async function (req, res, next) {
