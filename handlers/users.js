@@ -1,12 +1,10 @@
-
 const express = require('express');
 const app = express();
-const {redisClient, getAllIds, config, genId} = require("../data");
+const {redisClient, getAllIds, genId} = require("../data");
 
 
 app.post("/create/", async function (req, res, next) {
     /**
-     *
      * @type {User}
      */
     const body = req.body;
@@ -27,9 +25,6 @@ app.delete("/remove/:id", function (req, res, next) {
      * @type {string}
      */
     const {id} = req.params;
-    /**
-     * @type {User}
-     */
 
     redisClient.hdel(id, function (err) {
         if (err)
@@ -45,9 +40,6 @@ app.get("/find/", function (req, res, next) {
      * @type {string}
      */
     const ids = req.query.ids;
-    /**
-     * @type {User}
-     */
 
     getAllIds(ids, function (err, objects) {
         if (err)
@@ -62,15 +54,48 @@ app.get("/credit/:id", function (req, res, next) {
      * @type {string}
      */
     const {id} = req.params;
-    /**
-     * @type {User}
-     */
 
-    redisClient.hget(id, "credit", function (err, response) {
+    redisClient.hget(id, "credit", function (err, credit) {
         if (err)
             return next(err);
 
-        res.send({credit: 0});
+        res.send({credit});
+    });
+});
+
+app.post("/credit/subtract/:user_id/:amount", function (req, res, next) {
+    /**
+     * @type {string}
+     */
+    const {user_id, amount} = req.params;
+
+    redisClient.hincrby(user_id, "credit", -amount, function (err, newCredit) {
+        if (err)
+            return next(err);
+
+        if (newCredit < 0)
+            return redisClient.hincrby(user_id, "credit", amount, function (err) {
+                if (err)
+                    return next(err);
+
+                res.sendStatus(403);
+            });
+
+        res.sendStatus(200);
+    });
+});
+
+app.post("/credit/add/:user_id/:amount", function (req, res, next) {
+    /**
+     * @type {string}
+     */
+    const {user_id, amount} = req.params;
+
+    redisClient.hincrby(user_id, "credit", amount, function (err) {
+        if (err)
+            return next(err);
+
+        res.sendStatus(200);
     });
 });
 
