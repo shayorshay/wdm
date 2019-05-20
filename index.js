@@ -49,5 +49,6 @@ app.use(express.json());
 app.use("/users/", require("./handlers/users"));
 app.use("/stock/", require("./handlers/stock"));
 app.use("/orders/", require("./handlers/orders"));
+app.use("/payment/", require("./handlers/stock"));
 
 app.listen(8000);
