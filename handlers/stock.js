@@ -20,7 +20,7 @@ app.get("/availability/:id", function (req, res, next) {
         if (!item)
             return next(item);
 
-        res.sendStatus(200);
+        res.json({"count": item.number});
     });
 });
 
@@ -46,6 +46,17 @@ app.post("/add/:itemId/:number", function (req, res, next) {
     })
 });
 
+app.post("/item/create", function (req, res, next) {
+    const id = genId("item");
+    const newItem = {id, number: 0};
+
+    redisClient.hmset(id, newItem, function (err) {
+        if (err)
+            return next(err);
+
+        res.json({id});
+    });
+});
 module.exports = app;
 
 /**
