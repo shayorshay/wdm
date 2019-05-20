@@ -2,11 +2,6 @@ const express = require('express');
 const app = express();
 const {redisClient, getAllIds, config, genId} = require("../data");
 
-app.get("/", function (req, res) {
-
-    res.send("AKSJDKJASBDJK");
-});
-
 app.get("/availability/:id", function (req, res, next) {
     /**
      * @type {string}
