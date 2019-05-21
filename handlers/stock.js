@@ -2,6 +2,12 @@ const express = require('express');
 const app = express();
 const {redisClient, getAllIds, config, genId} = require("../data");
 
+const colNames = {
+    number: "number",
+    id: "id",
+    price: "price"
+};
+
 app.get("/availability/:id", function (req, res, next) {
     /**
      * @type {string}
@@ -11,29 +17,34 @@ app.get("/availability/:id", function (req, res, next) {
     /**
      * @type {Stock}
      */
-    redisClient.get(id, function (err, item) {
+    redisClient.hget(id, "number", function (err, item) {
         if (!item)
             return next(item);
 
-        res.json({"count": item.number});
+        res.json({"count": item});
     });
 });
 
 app.post("/subtract/:itemId/:number", function (req, res, next) {
     const {itemId, number} = req.params;
 
-    redisClient.incrby(itemId, -number, (err, count) => {
-        if (err)
-            return next(err);
+    redisClient.hget(itemId, "number", function (err, item) {
+        if (!item || item - number < 0)
+            return next(item);
 
-        res.json({"count": count});
-    })
+        redisClient.hincrby(itemId, colNames.number, -number, (err, count) => {
+            if (err)
+                return next(err);
+
+            res.json({"count": count});
+        })
+    });
 });
 
 app.post("/add/:itemId/:number", function (req, res, next) {
     const {itemId, number} = req.params;
 
-    redisClient.incrby(itemId, number, (err, count) => {
+    redisClient.hincrby(itemId, colNames.number, number, (err, count) => {
         if (err)
             return next(err);
 
