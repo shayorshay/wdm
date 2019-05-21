@@ -17,7 +17,7 @@ app.get("/availability/:id", function (req, res, next) {
     /**
      * @type {Stock}
      */
-    redisClient.hget(id, "number", function (err, item) {
+    redisClient.hget(id, colNames.number, function (err, item) {
         if (!item)
             return next(item);
 
@@ -28,7 +28,7 @@ app.get("/availability/:id", function (req, res, next) {
 app.post("/subtract/:itemId/:number", function (req, res, next) {
     const {itemId, number} = req.params;
 
-    redisClient.hget(itemId, "number", function (err, item) {
+    redisClient.hget(itemId, colNames.number, function (err, item) {
         if (!item || item - number < 0)
             return next(item);
 
@@ -63,10 +63,12 @@ app.post("/item/create", function (req, res, next) {
         res.json({id});
     });
 });
+
 module.exports = app;
 
 /**
  * @class Stock
  * @property {string} id
- * @property {string} number
+ * @property {int} number
+ * @property {int} price
  */
