@@ -9,35 +9,8 @@ const app = express();
 
 app.use(express.json());
 
-
-// const EVENTS_QUEUE = 'events';
-//
-//
-// const amqp = require('amqplib/callback_api');
-//
-// amqp.connect('amqp://localhost', function(err, connection) {
-//     if (err) {
-//         throw err;
-//     }
-//     connection.createChannel(function(err, channel) {
-//         if (err) {
-//             throw err;
-//         }
-//
-//         channel.assertQueue(EVENTS_QUEUE, {
-//             durable: true
-//         });
-//
-//         channel.consume(EVENTS_QUEUE, function(msg) {
-//             console.log(" [x] Received %s", msg.content.toString());
-//         }, {
-//             noAck: true
-//         });
-//
-//         // channel.sendToQueue(queue, Buffer.from(msg));
-//     });
-// });
-
+const redisApp = express();
+const sqlApp = express();
 
 /**
  * @class User
@@ -46,9 +19,19 @@ app.use(express.json());
  * @property {number} credit
  */
 
-app.use("/users/", require("./handlers/users"));
-app.use("/stock/", require("./handlers/stock"));
-app.use("/orders/", require("./handlers/orders"));
-app.use("/payment/", require("./handlers/payment"));
+redisApp.use("/users/", require("./handlers/users"));
+redisApp.use("/stock/", require("./handlers/stock"));
+redisApp.use("/orders/", require("./handlers/orders"));
+redisApp.use("/payment/", require("./handlers/payment"));
+
+
+
+sqlApp.use("/users/", require("./handlers-postgres/users"));
+// sqlApp.use("/stock/", require("./handlers-postgres/stock"));
+// sqlApp.use("/orders/", require("./handlers-postgres/orders"));
+// sqlApp.use("/payment/", require("./handlers-postgres/payment"));
+
+app.use("/redis/", redisApp);
+app.use("/sql/", sqlApp);
 
 app.listen(8000);

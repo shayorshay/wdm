@@ -3,6 +3,9 @@
     "port": 6379,
     "host": "localhost"
   },
+  "sql": {
+    "port": 5432
+  },
   "endpoints" : {
     "users": "http://127.0.0.1:8000",
     "stock": "http://127.0.0.1:8000",

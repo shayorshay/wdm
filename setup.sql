@@ -6,38 +6,42 @@ SET SEARCH_PATH TO wdm;
 CREATE TABLE client
 (
     name   VARCHAR(50),
-    id     VARCHAR(40) primary key,
-    credit FLOAT
+    id     SERIAL primary key,
+--     id     VARCHAR(40) primary key,
+    credit FLOAT DEFAULT 0
 );
 
 -- STOCK
 CREATE TABLE item
 (
-    id    VARCHAR(40) primary key,
+    id    SERIAL primary key,
+--     id    VARCHAR(40) primary key,
     name  VARCHAR(50),
-    cost  FLOAT,
-    stock INTEGER
+    cost  FLOAT   NOT NULL,
+    stock INTEGER NOT NULL
 
 );
 
 -- ORDERS
 CREATE TABLE "order"
 (
-    id VARCHAR(40) primary key
+    id SERIAL primary key
+--     id VARCHAR(40) primary key
 );
 
 -- ORDERS
 CREATE TABLE order_item
 (
-    order_id VARCHAR(40) REFERENCES "order" (id),
+    order_id INTEGER REFERENCES "order" (id),
 --     item_id  VARCHAR(40) REFERENCES item (id),
     item_id  VARCHAR(40),
-    quantity INTEGER
+    quantity INTEGER NOT NULL
 );
 
 -- PAYMENTS
 CREATE TABLE payment
 (
-    id       VARCHAR(40) primary key,
+    id       SERIAL primary key,
+--     id       VARCHAR(40) primary key,
     order_id VARCHAR(40)
 );
