@@ -57,50 +57,57 @@ app.post("/additem/:id/:item_id", function (req,res,next){
     const {id, item_id} = req.params;
     number = 1;
    
-    redisClient.hvals(item_id, (err, value)=>{
+    redisClient.hvals(id, (err, value)=>{
+        // if order exists
+        if (value[0] != id)
+            return next(err);
+        redisClient.hvals(item_id, (err, value)=>{
         // if the item exists
-        if (value[number] == null)
-            return next(err);
+            if (value[number] == null)
+                return next(err);
          // if the item stock enough
-        if (value[number] <1)
-            return next(err);
+            if (value[number] <1)
+                return next(err);
         
-            // console.log(value[number]);
-        redisClient.hincrby(id, item_id , number, (err, count) =>{
-            if (err)
-                return next(err);
-            if (count > value[number])
-                return next(err);
+             //console.log(value[number]);
+            redisClient.hincrby(id, item_id , number, (err, count) =>{
+                if (err)
+                    return next(err);
+                if (count > value[number])
+                    return next(err);
             
-            res.json({"id": id, "itemid":item_id,"count": count});
+                res.json({"id": id, "itemid":item_id,"count": count});
 
          });
         
         });
- 
+    });
 });
 
 app.post("/removeitem/:id/:item_id", function (req,res,next){
 
     const {id, item_id} = req.params;
     number = 1;
-    
-    redisClient.hvals(item_id, (err, value)=>{
-    // if the item exists
-        if (value[number] == null)
+    redisClient.hvals(id, (err, value)=>{
+        // if order exists
+        if (value[0] != id)
             return next(err);
-        redisClient.hincrby(id, item_id , -number, (err, count) =>{
-            if (err)
+        redisClient.hvals(item_id, (err, value)=>{
+        // if the item exists
+            if (value[number] == null)
                 return next(err);
-            if (count <0)
-                return next(err);
+            redisClient.hincrby(id, item_id , -number, (err, count) =>{
+                if (err)
+                    return next(err);
+                if (count <0)
+                    return next(err);
             
             res.json({"id": id, "itemid":item_id,"count": count});
 
          });
         
         })
- 
+    });
 });
 
 
