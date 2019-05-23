@@ -17,11 +17,11 @@ app.get("/availability/:id", function (req, res, next) {
     /**
      * @type {Stock}
      */
-    redisClient.hget(id, colNames.number, function (err, item) {
+    redisClient.hgetall(id, function (err, item) {
         if (!item)
             return next(item);
 
-        res.json({"count": item});
+        res.json(item);
     });
 });
 
@@ -54,7 +54,9 @@ app.post("/add/:itemId/:number", function (req, res, next) {
 
 app.post("/item/create", function (req, res, next) {
     const id = genId("item");
-    const newItem = {id, number: 0};
+    const price = Math.floor(Math.random() * 10) + 1;
+
+    const newItem = {id, number: 0, price: price};
 
     redisClient.hmset(id, newItem, function (err) {
         if (err)

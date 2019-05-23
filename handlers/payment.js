@@ -16,15 +16,23 @@ app.post("/pay/:userId/:orderId", async function (req, res, next) {
 
     // Get order from order service
     const order = endpoints.order.get(orderId).then(result => {
-            // endpoints.subtract(userId, result.)
+            const test = "asasas";
 
-            // Still in progress
+            let cost = 0;
+
+            // for now lets assume each item costs 1 euro
+            Object.values(result).forEach(r => {
+                cost += r;
+            });
+
+            endpoints.subtract(userId, cost).then(
+                paymentResult => res.sendStatus(200),
+                paymentError => res.send(paymentError));
+
         },
         error => {
-            res.sendStatus(500);
+            res.send(error);
         });
-    // subtract the amount from user credit.
-
 });
 
 // app.post("/cancelPayment/:userId/:orderId", function (req, res, next) {
