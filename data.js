@@ -2,20 +2,23 @@
 
 const redis = require("redis");
 const config = require("./config");
-const redisClient = redis.createClient(config.redis);
+const redisClient = config.redis ? redis.createClient(config.redis) : null;
 const crypto = require('crypto');
 
 
-const { Client } = require('pg');
-const sqlClient = new Client(config.sql);
+const {Client} = require('pg');
+let aux = null;
+if (config.sql) {
+    aux = new Client(config.sql);
+    aux.connect(function (err) {
+        if (err)
+            throw err;
 
-sqlClient.connect(function (err) {
-    if (err)
-        throw err;
+        console.log("Connected to SQL");
+    });
+}
 
-    console.log("Connected to SQL");
-});
-
+const sqlClient = aux;
 
 
 function genId(partition) {
