@@ -131,7 +131,7 @@ module.exports = app;
 /**
  * @class Order
  * @property {string} id
- * @property {string} itemsId
+ * @property {array} orderItems
  * @property {string} userId
  */
 

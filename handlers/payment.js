@@ -3,6 +3,10 @@ const app = express();
 const {redisClient, genId} = require("../data");
 const endpoints = require("../endpoints");
 
+const cols = {
+    payment: "payment:"
+};
+
 app.get("/", function (req, res) {
 
     res.send("Testing service availability");
@@ -16,19 +20,45 @@ app.post("/pay/:userId/:orderId", async function (req, res, next) {
 
     // Get order from order service
     const order = endpoints.order.get(orderId).then(result => {
-            const test = "asasas";
-
+            /**
+             *
+             * @type {number}
+             */
             let cost = 0;
+            /**
+             * @type {Order}
+             */
+            const order = JSON.parse(result);
 
             // for now lets assume each item costs 1 euro
-            Object.values(result).forEach(r => {
-                cost += r;
+            Object.values(order.orderItems).forEach(r => {
+                cost += parseInt(r);
             });
 
-            endpoints.subtract(userId, cost).then(
-                paymentResult => res.sendStatus(200),
-                paymentError => res.send(paymentError));
+            /**
+             * @type {string}
+             */
+            const paymentId = cols.payment + orderId;
 
+            /**
+             * @type {Payment}
+             */
+            const payment = {
+                "id": paymentId,
+                "cost": cost,
+                "userId": userId,
+                "orderId": orderId,
+            };
+
+            redisClient.hmset(paymentId, payment, (err, result) => {
+                if (err)
+                    res.send(err);
+
+                endpoints.subtract(userId, cost).then(
+                    paymentResult => res.sendStatus(200),
+                    paymentError => res.send(paymentError));
+
+            });
         },
         error => {
             res.send(error);
@@ -62,6 +92,8 @@ module.exports = app;
 /**
  * @class Payment
  * @property {string} id
- * @property {int} number
+ * @property {number} cost
  * @property {string} userId
+ * @property {string} orderId
+ *
  */
