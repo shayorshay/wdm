@@ -69,38 +69,6 @@ app.get("/find/:id", function (req, res, next) {
 });
 
 
-// app.post("/additem/:id/:item_id", function (req, res, next) {
-//
-//     const {id, item_id} = req.params;
-//     number = 1;
-//
-//     redisClient.hvals(id, (err, value) => {
-//         // if order exists
-//         if (value[0] != id)
-//             return next(err);
-//         redisClient.hvals(item_id, (err, value) => {
-//             // if the item exists
-//             if (value[number] == null)
-//                 return next(err);
-//             // if the item stock enough
-//             if (value[number] < 1)
-//                 return next(err);
-//
-//             //console.log(value[number]);
-//             redisClient.hincrby(id, item_id, number, (err, count) => {
-//                 if (err)
-//                     return next(err);
-//                 if (count > value[number])
-//                     return next(err);
-//
-//                 res.json({"id": id, "itemid": item_id, "count": count});
-//
-//             });
-//
-//         });
-//     });
-// });
-
 app.post("/additem/:orderId/:itemId", function (req, res, next) {
     const {orderId, itemId} = req.params;
 
@@ -108,7 +76,7 @@ app.post("/additem/:orderId/:itemId", function (req, res, next) {
     redisClient.hget(orderId, ordercol.orderItemsId, (err, item) => {
         if (err)
             return next(err);
-
+        
         // add item to orderItems (hincrby will create a hashkey even if it is not created yet.
         redisClient.hincrby(item, itemId, 1, function (err, result) {
             if (err)
@@ -120,28 +88,26 @@ app.post("/additem/:orderId/:itemId", function (req, res, next) {
 });
 
 
-app.post("/removeitem/:id/:item_id", function (req, res, next) {
+app.post("/removeitem/:orderId/:itemId", function (req, res, next) {
 
-    const {id, item_id} = req.params;
-    number = 1;
-    redisClient.hvals(id, (err, value) => {
-        // if order exists
-        if (value[0] != id)
+    const {orderId, itemId} = req.params;
+
+    redisClient.hget(orderId, ordercol.orderItemsId, (err, item) => {
+        if (err)
             return next(err);
-        redisClient.hvals(item_id, (err, value) => {
-            // if the item exists
-            if (value[number] == null)
+        
+        // remove item to orderItems
+        redisClient.hincrby(item, itemId, -1, function (err, result) {
+            if (err)
                 return next(err);
-            redisClient.hincrby(id, item_id, -number, (err, count) => {
-                if (err)
-                    return next(err);
-                if (count < 0)
-                    return next(err);
-
-                res.json({"id": id, "itemid": item_id, "count": count});
-
-            });
-
+            // if item num< 0 , set to 0
+            if (result < 0)
+              {
+                  result = 0;
+                  redisClient.hmset(item, itemId, 0);
+              }  
+            
+            res.json({"itemId": itemId, "count": result});
         })
     });
 });
