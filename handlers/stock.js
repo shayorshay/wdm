@@ -28,16 +28,19 @@ app.get("/availability/:id", function (req, res, next) {
 app.post("/subtract/:itemId/:number", function (req, res, next) {
     const {itemId, number} = req.params;
 
-    redisClient.hget(itemId, colNames.number, function (err, item) {
-        if (!item || item - number < 0)
-            return next(item);
+    redisClient.hincrby(itemId, colNames.number, -number, function (err, newNumber) {
+        if (err)
+            return next(err);
 
-        redisClient.hincrby(itemId, colNames.number, -number, (err, count) => {
-            if (err)
-                return next(err);
+        if (newNumber < 0)
+            return redisClient.hincrby(itemId, colNames.number, number, function (err) {
+                if (err)
+                    return next(err);
 
-            res.json({"count": count});
-        })
+                res.sendStatus(403);
+            });
+
+        res.sendStatus(200);
     });
 });
 
