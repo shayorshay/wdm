@@ -1,6 +1,6 @@
 const express = require('express');
 const app = express();
-const {redisClient, getAllIds, config, genId} = require("../data");
+const {sqlClient} = require("../data");
 
 const colNames = {
     number: "number",
@@ -14,42 +14,57 @@ app.get("/availability/:id", function (req, res, next) {
      */
     const {id} = req.params;
 
-    /**
-     * @type {Stock}
-     */
-    redisClient.hgetall(id, function (err, item) {
-        if (!item)
-            return next(item);
+    // language=PostgreSQL
+    sqlClient.query("SELECT * FROM wdm.order WHERE id = $1", [id], function (err, result) {
+        if (err)
+            return next(err);
 
-        res.send(item);
+        if (!result.rows.length)
+            return res.sendStatus(404);
+
+        res.send(result.rows[0]);
     });
 });
 
 app.post("/subtract/:itemId/:number", function (req, res, next) {
     const {itemId, number} = req.params;
 
-    redisClient.hget(itemId, colNames.number, function (err, item) {
-        if (!item || item - number < 0)
-            return next(item);
 
-        redisClient.hincrby(itemId, colNames.number, -number, (err, count) => {
-            if (err)
-                return next(err);
+    // language=PostgreSQL
+    sqlClient.query("UPDATE wdm.item SET stock = stock - $2 WHERE id = $1 AND stock >= $2", [itemId, number], function (err, result) {
+        if (err)
+            return next(err);
 
-            res.send({"count": count});
-        })
+        if (!result.rowCount) {
+            // language=PostgreSQL
+            return sqlClient.query("SELECT 1 FROM wdm.item WHERE id = $1", [itemId], function (err, result) {
+                if (err)
+                    return next(err);
+
+                if (result.rows.length)
+                    return res.sendStatus(403);
+
+                res.sendStatus(404);
+            });
+        }
+
+        res.sendStatus(200);
     });
 });
 
 app.post("/add/:itemId/:number", function (req, res, next) {
     const {itemId, number} = req.params;
 
-    redisClient.hincrby(itemId, colNames.number, number, (err, count) => {
+    // language=PostgreSQL
+    sqlClient.query("UPDATE wdm.item SET stock = stock - $2 WHERE id = $1 AND stock >= $2", [itemId, number], function (err, result) {
         if (err)
             return next(err);
 
-        res.send({"count": count});
-    })
+        if (!result.rowCount)
+            return res.sendStatus(404);
+
+        res.sendStatus(200);
+    });
 });
 
 app.post("/item/create", function (req, res, next) {
