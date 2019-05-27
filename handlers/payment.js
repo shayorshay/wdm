@@ -19,16 +19,12 @@ app.post("/pay/:userId/:orderId", async function (req, res, next) {
     const {userId, orderId} = req.params;
 
     // Get order from order service
-    const order = endpoints.order.get(orderId).then(result => {
+    const order = endpoints.order.get(orderId).then(order => {
             /**
              *
              * @type {number}
              */
             let cost = 0;
-            /**
-             * @type {Order}
-             */
-            const order = JSON.parse(result);
 
             // for now lets assume each item costs 1 euro
             Object.values(order.orderItems).forEach(r => {

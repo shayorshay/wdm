@@ -51,7 +51,7 @@ app.post("/add/:itemId/:number", function (req, res, next) {
         if (err)
             return next(err);
 
-        res.json({"count": count});
+        res.json({count});
     })
 });
 

@@ -4,7 +4,7 @@ const redis = require("redis");
 const config = require("./config");
 const redisClient = config.redis ? redis.createClient(config.redis) : null;
 const crypto = require('crypto');
-
+const endpoints = require("./endpoints");
 
 const {Client} = require('pg');
 let aux = null;
@@ -23,6 +23,10 @@ const sqlClient = aux;
 
 function genId(partition) {
     return partition + ":" + crypto.randomBytes(20).toString('hex');
+}
+
+function getItemId(orderId, userId) {
+    return userId + ":" + orderId;
 }
 
 function getAllIds(ids, callback) {
@@ -45,5 +49,7 @@ module.exports = {
     sqlClient,
     config,
     getAllIds,
-    genId
+    getItemId,
+    genId,
+    endpoints
 };

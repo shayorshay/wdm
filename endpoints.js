@@ -3,7 +3,8 @@ const request = require("request-promise-native");
 const endpoints = require("./config").endpoints;
 const prefixes = {
     stock: '/stock',
-    orders: '/orders'
+    orders: '/orders',
+    payments: '/payment',
 };
 
 module.exports = {
@@ -63,6 +64,16 @@ module.exports = {
         get: async function(id) {
             return request({
                 uri: endpoints.orders + prefixes.orders + `/find/${id}`,
+                method: 'GET',
+                json: true
+            });
+        }
+    },
+
+    payment: {
+        getStatus: async function (id) {
+            return request({
+                uri: endpoints.orders + prefixes.payments + `/status/${id}`,
                 method: 'GET'
             });
         }
