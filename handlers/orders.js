@@ -1,44 +1,20 @@
 const express = require('express');
 const app = express();
-const {redisClient, getAllIds, config, genId} = require("../data");
+const {redisClient, genId, endpoints} = require("../data");
 
+app.post("/create/:user_id", async function (req, res, next) {
 
-const ordercol = {
-    userid: "userid",
-    orderid: "orderid",
-    itemid: "itemid",
-    number: "number",
-    items: "items",
-    orderItemsId: "orderItemsId"
-};
+    const {user_id} = req.params;
 
-app.post("/create/:usr_id", async function (req, res, next) {
-
-    const {usr_id} = req.params;
-
-    const body = req.body;
-    const id = genId("order");
-    body.id = id;
-    body.user_id = usr_id;
-
-    const orderItemId = genId("orderItems");
+    const orderId = genId("ord");
 
     // create empty orderItems key
-    redisClient.hset(orderItemId, "", "", (err, result) => {
+    redisClient.hset(id, "user_id", user_id, (err) => {
         if (err)
             return next(err);
 
-        body[`${ordercol.orderItemsId}`] = orderItemId;
-
-        // create actual order, assign orderItemsId and all fields
-        redisClient.hmset(id, body, function (err) {
-            if (err)
-                return next(err);
-
-            res.send({id});
-        });
+        res.send({orderId});
     });
-
 });
 
 app.delete("/remove/:id", function (req, res, next) {
@@ -56,15 +32,23 @@ app.delete("/remove/:id", function (req, res, next) {
 app.get("/find/:id", function (req, res, next) {
     const {id} = req.params;
 
-    redisClient.hgetall(id, function (err, order) {
+    redisClient.hgetall(id, async function (err, orderItems) {
         if (err)
             return next(err);
 
-        // fetch and append all items for particular order
-        redisClient.hgetall(order.orderItemsId, (err, orderItemList) => {
-            order.orderItems = orderItemList;
-            res.send(order);
-        });
+        const {user_id} = orderItems;
+
+        orderItems.user_id = undefined;
+
+        let status = await endpoints.payment.getStatus(id);
+
+        let result = {
+            user_id,
+            orderItems,
+            status
+        };
+
+        res.send(result);
     });
 });
 
@@ -72,19 +56,13 @@ app.get("/find/:id", function (req, res, next) {
 app.post("/additem/:orderId/:itemId", function (req, res, next) {
     const {orderId, itemId} = req.params;
 
-    // get orderItem id
-    redisClient.hget(orderId, ordercol.orderItemsId, (err, item) => {
+    // add item to orderItems (hincrby will create a hashkey even if it is not created yet.
+    redisClient.hincrby(orderId, itemId, 1, function (err) {
         if (err)
             return next(err);
-        
-        // add item to orderItems (hincrby will create a hashkey even if it is not created yet.
-        redisClient.hincrby(item, itemId, 1, function (err, result) {
-            if (err)
-                return next(err);
 
-            res.json({"itemId": itemId, "count": result});
-        })
-    });
+        res.sendStatus(200);
+    })
 });
 
 
@@ -92,23 +70,25 @@ app.post("/removeitem/:orderId/:itemId", function (req, res, next) {
 
     const {orderId, itemId} = req.params;
 
-    redisClient.hget(orderId, ordercol.orderItemsId, (err, item) => {
+
+    // subtract item to orderItems (hincrby will create a hashkey even if it is not created yet.
+    redisClient.hincrby(orderId, itemId, -1, function (err, result) {
         if (err)
             return next(err);
-        
-        // remove item to orderItems
-        redisClient.hincrby(item, itemId, -1, function (err, result) {
-            if (err)
-                return next(err);
-            // if item num< 0 , set to 0
-            if (result < 0)
-              {
-                  result = 0;
-                  redisClient.hmset(item, itemId, 0);
-              }  
-            
-            res.json({"itemId": itemId, "count": result});
-        })
+
+        if (result < 0) {
+            // add item to orderItems (hincrby will create a hashkey even if it is not created yet.
+            redisClient.hincrby(orderId, itemId, 1, function (err) {
+                if (err)
+                    return next(err);
+
+                res.sendStatus(403);
+            });
+
+            return;
+        }
+
+        res.sendStatus(200);
     });
 });
 
