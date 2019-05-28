@@ -4,7 +4,8 @@ const {redisClient, genId} = require("../data");
 const endpoints = require("../endpoints");
 
 const cols = {
-    payment: "payment:"
+    payment: "pmt:",
+    status: "status"
 };
 
 app.get("/", function (req, res) {
@@ -44,12 +45,15 @@ app.post("/pay/:userId/:orderId", async function (req, res, next) {
                 "cost": cost,
                 "userId": userId,
                 "orderId": orderId,
+                "status": "PAYED"
             };
 
+            // Create payment
             redisClient.hmset(paymentId, payment, (err, result) => {
                 if (err)
                     res.send(err);
 
+                // subtract amount from user account
                 endpoints.subtract(userId, cost).then(
                     paymentResult => res.sendStatus(200),
                     paymentError => res.send(paymentError));
@@ -61,27 +65,54 @@ app.post("/pay/:userId/:orderId", async function (req, res, next) {
         });
 });
 
-// app.post("/cancelPayment/:userId/:orderId", function (req, res, next) {
-//     const {userId, orderId} = req.params;
-//
-//     redisClient.incrby(itemId, -number, (err, count) => {
-//         if (err)
-//             return next(err);
-//
-//         res.json({"count": count});
-//     })
-// });
-//
-// app.post("/stock.js/:itemId/:number", function (req, res, next) {
-//     const {itemId, number} = req.params;
-//
-//     redisClient.incrby(itemId, number, (err, count) => {
-//         if (err)
-//             return next(err);
-//
-//         res.json({"count": count});
-//     })
-// });
+app.post("/cancelPayment/:userId/:orderId", function (req, res, next) {
+    const {userId, orderId} = req.params;
+
+    redisClient.hgetall(cols.payment, function (err, payment) {
+        if (err)
+            return next(err);
+
+        // cancel the payment
+        redisClient.hset(cols.payment + orderId, cols.status, "CANCELED", (err, res) => {
+                if (err)
+                    return next(err);
+
+                // add funds to user
+                endpoints.addFunds(userId, payment.cost).then(
+                    paymentResult => {
+                        // everything is cool
+                        res.sendStatus(200);
+                    },
+                    paymentError => {
+                        redisClient.hset(cols.payment + orderId, cols.status, "PAYED", (err, res) => {
+                            // reached no return point, too bad
+                            if (err)
+                                return next(err);
+                        });
+                    });
+
+                //rollback payment to initial state
+                res.send(paymentError)
+            }
+        );
+
+    });
+});
+
+
+app.post("/payment/status/:orderId", function (req, res, next) {
+    /**
+     * @type {string}
+     */
+    const {orderId} = req.params;
+
+    redisClient.hget(cols.payment + orderId, cols.status, (err, status) => {
+        if (err)
+            return next(err);
+
+        res.json({status});
+    })
+});
 
 module.exports = app;
 
@@ -91,5 +122,6 @@ module.exports = app;
  * @property {number} cost
  * @property {string} userId
  * @property {string} orderId
+ * @property {string} status
  *
  */
