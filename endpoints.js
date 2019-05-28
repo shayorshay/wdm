@@ -4,7 +4,7 @@ const endpoints = require("./config").endpoints;
 const prefixes = {
     stock: '/stock',
     orders: '/orders',
-    payments: '/payment',
+    payment: '/payment',
 };
 
 module.exports = {
@@ -73,7 +73,7 @@ module.exports = {
     payment: {
         getStatus: async function (id) {
             return request({
-                uri: endpoints.orders + prefixes.payments + `/status/${id}`,
+                uri: endpoints.payment + prefixes.payment + `/status/${id}`,
                 method: 'GET'
             });
         }

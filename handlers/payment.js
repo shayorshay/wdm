@@ -100,7 +100,7 @@ app.post("/cancelPayment/:userId/:orderId", function (req, res, next) {
 });
 
 
-app.post("/payment/status/:orderId", function (req, res, next) {
+app.get("/status/:orderId", function (req, res, next) {
     /**
      * @type {string}
      */
@@ -110,7 +110,7 @@ app.post("/payment/status/:orderId", function (req, res, next) {
         if (err)
             return next(err);
 
-        res.json({status});
+        res.send(status);
     })
 });
 
