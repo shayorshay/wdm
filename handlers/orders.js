@@ -9,7 +9,7 @@ app.post("/create/:user_id", async function (req, res, next) {
     const orderId = genId("ord");
 
     // create empty orderItems key
-    redisClient.hset(id, "user_id", user_id, (err) => {
+    redisClient.hset(orderId, "user_id", user_id, (err) => {
         if (err)
             return next(err);
 
