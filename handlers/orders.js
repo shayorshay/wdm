@@ -1,7 +1,12 @@
 const express = require('express');
 const app = express();
-const {redisClient, genId, endpoints} = require("../data");
+const {redisClient, genId,endpoints} = require("../data");
+const endpoint = require("../endpoints");
 
+const cols = {
+    payment: "pmt:",
+    status: "status"
+};
 app.post("/create/:user_id", async function (req, res, next) {
 
     const {user_id} = req.params;
@@ -93,18 +98,44 @@ app.post("/removeitem/:orderId/:itemId", function (req, res, next) {
 });
 
 
-// app.post("/checkout/:id", function (req,res,next){
+app.post("/checkout/:orderId", function (req,res,next){
 
-//     // calling payment service
+    // calling payment service
+    const {orderId} = req.params;
+    redisClient.hget(orderId,"user_id", function(err, userId){
+        //calling payment function
+        endpoint.payment.pay(userId,orderId).then(
+            checkoutResult=>{
+            // subtract the stocks
+                endpoint.order.get(orderId).then(order => {
+                    
+                    Object.entries(order.orderItems).forEach(item =>{
 
+                        endpoint.stock.subtract(item[0],parseInt(item[1]));
+                        
+                    });
+                    
+                });
+            // set payment status
+            redisClient.hset(cols.payment + orderId, cols.status, "FINISHED", (err, res) => {
+                // reached no return point, too bad
+                if (err)
+                    return next(err);
+            });
+            res.sendStatus(200);
+    
+                
+            },
+            checkoutError=>{
+                if (err)
+                    return next(err);
+                
+            });
+           
+     });
 
-//     // subtract the stocks
-
-
-//     // return the status
-// }
-//
-// );
+    
+});
 
 module.exports = app;
 

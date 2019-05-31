@@ -71,6 +71,12 @@ module.exports = {
     },
 
     payment: {
+        pay: async function (userid, orderid) {
+            return request({
+                uri: endpoints.orders + prefixes.payment +  `/pay/${userid}/${orderid}`,
+                method: 'POST'
+            });
+        },
         getStatus: async function (id) {
             return request({
                 uri: endpoints.payment + prefixes.payment + `/status/${id}`,
