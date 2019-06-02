@@ -26,7 +26,7 @@ app.delete("/remove/:id", function (req, res, next) {
      */
     const {id} = req.params;
 
-    redisClient.hdel(id, function (err) {
+    redisClient.del(id, function (err) {
         if (err)
             return next(err);
 
