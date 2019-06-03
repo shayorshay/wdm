@@ -25,8 +25,8 @@ CREATE TABLE item
 -- ORDERS
 CREATE TABLE "order"
 (
-    id SERIAL primary key
---     id VARCHAR(40) primary key
+    id SERIAL primary key,
+    userid INTEGER
 );
 
 -- ORDERS
