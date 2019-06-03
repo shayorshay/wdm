@@ -26,7 +26,7 @@ CREATE TABLE item
 CREATE TABLE "order"
 (
     id SERIAL primary key,
-    userid INTEGER
+    userid INTEGER REFERENCES client(id)
 );
 
 -- ORDERS
