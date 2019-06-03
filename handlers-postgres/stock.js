@@ -56,7 +56,7 @@ app.post("/add/:itemId/:number", function (req, res, next) {
     const {itemId, number} = req.params;
 
     // language=PostgreSQL
-    sqlClient.query("UPDATE wdm.item SET stock = stock - $2 WHERE id = $1 AND stock >= $2", [itemId, number], function (err, result) {
+    sqlClient.query("UPDATE wdm.item SET stock = stock + $2 WHERE id = $1", [itemId, number], function (err, result) {
         if (err)
             return next(err);
 
