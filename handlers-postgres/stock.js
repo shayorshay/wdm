@@ -68,16 +68,15 @@ app.post("/add/:itemId/:number", function (req, res, next) {
 });
 
 app.post("/item/create", function (req, res, next) {
-    const id = genId("item");
     const price = Math.floor(Math.random() * 10) + 1;
-
-    const newItem = {id, number: 0, price: price};
-
-    redisClient.hmset(id, newItem, function (err) {
+    // language=PostgreSQL
+    sqlClient.query("INSERT INTO wdm.item(cost, stock) VALUES ($1, $2) RETURNING id", [price, 0], function (err, result) {
         if (err)
             return next(err);
 
-        res.send({id});
+        const newItem = {id: result.rows[0].id, number: 0, price};
+
+        res.send(newItem);
     });
 });
 
