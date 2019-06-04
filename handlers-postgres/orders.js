@@ -30,15 +30,35 @@ app.delete("/remove/:id", function (req, res, next) {
 
 app.get("/find/:id", function (req, res, next) {
     const {id} = req.params;
-
-    sqlClient.query(`SELECT * FROM wdm.order WHERE id = $1`,[id], async function (err, result) {
+    
+    
+    sqlClient.query(`SELECT * FROM wdm.order WHERE id = $1`,[id], async function (err, orderResult) {
         if (err)
             return next(err);
-        if (!result.rows.length)
+        if (!orderResult.rows.length)
+            return res.sendStatus(404);
+        
+        user_id = orderResult.rows[0].userid;
+        status = orderResult.rows[0].status;
+        let orderItems = undefined;
+        sqlClient.query(`SELECT * FROM wdm.order_item WHERE order_id = $1`,[id], async function (err, order_item) {
+        if (err)
+            return next(err);
+        if (!order_item.rows.length)
             return res.sendStatus(404);
 
-        res.send(result.rows[0]);
+        orderItems = order_item.rows;
+        let result = 
+        {
+            user_id,
+            orderItems,
+            status
+        };
+        res.send(result);
+        });
+        
     });
+    
 });
 
 app.post("/additem/:orderId/:itemId", function (req, res, next) {
@@ -55,7 +75,6 @@ app.post("/additem/:orderId/:itemId", function (req, res, next) {
                 res.send(result.rows[0]);
             })
         }
-        
         else
         {
             sqlClient.query(`UPDATE wdm.order_item SET quantity = quantity +1 WHERE order_id = $1 AND item_id = $2`,[orderId,itemId], function (err,result) {
@@ -65,8 +84,6 @@ app.post("/additem/:orderId/:itemId", function (req, res, next) {
                 res.send(result.rows[0]);
             })
         }
-        
-
 
     });
     
@@ -92,9 +109,12 @@ app.post("/removeitem/:orderId/:itemId", function (req, res, next) {
             })
         }
         
-
-
     });
 });
+
+app.post("/checkout/:orderId", function (req,res,next){
+
+});
+
 
 module.exports = app;
