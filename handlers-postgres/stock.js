@@ -15,7 +15,7 @@ app.get("/availability/:id", function (req, res, next) {
     const {id} = req.params;
 
     // language=PostgreSQL
-    sqlClient.query("SELECT * FROM wdm.order WHERE id = $1", [id], function (err, result) {
+    sqlClient.query("SELECT * FROM wdm.item WHERE id = $1", [id], function (err, result) {
         if (err)
             return next(err);
 
