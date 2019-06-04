@@ -118,6 +118,12 @@ app.post("/checkout/:orderId", function (req,res,next){
                 });
                 
             });
+             // set payment status
+             redisClient.hset(cols.payment + orderId, cols.status, "FINISHED", (err, res) => {
+                // reached no return point, too bad
+                if (err)
+                    return next(err);
+            });
             res.sendStatus(200);
         }
         else{
