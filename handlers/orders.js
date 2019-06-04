@@ -100,40 +100,68 @@ app.post("/removeitem/:orderId/:itemId", function (req, res, next) {
 
 app.post("/checkout/:orderId", function (req,res,next){
 
-    // calling payment service
-    const {orderId} = req.params;
-    redisClient.hget(orderId,"user_id", function(err, userId){
-        //calling payment function
-        endpoint.payment.pay(userId,orderId).then(
-            checkoutResult=>{
-            // subtract the stocks
-                endpoint.order.get(orderId).then(order => {
-                    
-                    Object.entries(order.orderItems).forEach(item =>{
+     // calling payment service
+     const {orderId} = req.params;
+     // check status
+     endpoint.payment.getStatus(orderId).then(order_status=>
+    {
+        if ((order_status == "FINISHED")||(order_status == "CANCELED"))
+            res.sendStatus(403);
+        else if (order_status == "PAYED")
+        {
+            endpoint.order.get(orderId).then(order => {
+                            
+                Object.entries(order.orderItems).forEach(item =>{
 
-                        endpoint.stock.subtract(item[0],parseInt(item[1]));
-                        
-                    });
+                    endpoint.stock.subtract(item[0],parseInt(item[1]));
                     
                 });
-            // set payment status
-            redisClient.hset(cols.payment + orderId, cols.status, "FINISHED", (err, res) => {
+                
+            });
+             // set payment status
+             redisClient.hset(cols.payment + orderId, cols.status, "FINISHED", (err, res) => {
                 // reached no return point, too bad
                 if (err)
                     return next(err);
             });
             res.sendStatus(200);
-    
-                
-            },
-            checkoutError=>{
-                if (err)
-                    return next(err);
-                
-            });
-           
-     });
-
+        }
+        else{
+            redisClient.hget(orderId,"user_id", function(err, userId){
+                //calling payment function
+                endpoint.payment.pay(userId,orderId).then(
+                    checkoutResult=>{
+                    // subtract the stocks
+                        endpoint.order.get(orderId).then(order => {
+                            
+                            Object.entries(order.orderItems).forEach(item =>{
+        
+                                endpoint.stock.subtract(item[0],parseInt(item[1]));
+                                
+                            });
+                            
+                        });
+                    // set payment status
+                    redisClient.hset(cols.payment + orderId, cols.status, "FINISHED", (err, res) => {
+                        // reached no return point, too bad
+                        if (err)
+                            return next(err);
+                    });
+                    res.sendStatus(200);
+            
+                        
+                    },
+                    checkoutError=>{
+                        if (err)
+                            return next(err);
+                        
+                    });
+                   
+             });
+        
+        }
+    });
+     
     
 });
 
