@@ -12,28 +12,36 @@ app.post("/pay/:userId/:orderId", async function (req, res, next) {
             return next(err);
 
         if (result.rowCount !== 1) {
-            //something went wrong -- no items were for found for order
+            //something went wrong
             return res.sendStatus(404);
 
         } else {
             let cost = result.rows[0].sum;
-            endpoints.subtract(userId, cost).then(
-                paymentResult => {
+
+            sqlClient.query("SELECT * FROM wdm.payment WHERE order_id = $1", [orderId], function (err, result) {
+                if (err)
+                    return next(err);
+
+                if (result.rowCount !== 1) { //no payment for order exists -- create new
                     sqlClient.query("INSERT INTO wdm.payment (id, cost, order_id, user_id, status) VALUES ($1, $2, $3, $4, 'PAID')", [orderId, cost, orderId, userId], function (err, result) {
                         if (err)
                             return next(err);
 
+                        endpoints.subtract(userId, cost).then(
+                            paymentResult => res.sendStatus(200),
+                            paymentError => res.send(paymentError));
+
                     });
-                    res.sendStatus(200)
-                },
 
-                paymentError => res.send(paymentError));
+                } else {
+                    return res.sendStatus(403);
+                }
 
+            });
         }
-
     });
-
 });
+
 
 
 app.post("/cancelPayment/:userId/:orderId", async function (req, res, next) {
