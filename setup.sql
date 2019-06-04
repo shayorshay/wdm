@@ -33,15 +33,18 @@ CREATE TABLE "order"
 CREATE TABLE order_item
 (
     order_id INTEGER REFERENCES "order" (id),
---     item_id  VARCHAR(40) REFERENCES item (id),
-    item_id  VARCHAR(40),
-    quantity INTEGER NOT NULL
+	item_id  INTEGER REFERENCES item (id),
+    --item_id  VARCHAR(40),
+    quantity INTEGER NOT NULL,
+	cost  FLOAT DEFAULT 1
 );
 
 -- PAYMENTS
 CREATE TABLE payment
 (
-    id       SERIAL primary key,
---     id       VARCHAR(40) primary key,
-    order_id VARCHAR(40)
+    id INTEGER REFERENCES "order" (id),
+    cost FLOAT NOT NULL,
+    order_id VARCHAR(40),
+	user_id VARCHAR(40),
+	status VARCHAR(40)
 );

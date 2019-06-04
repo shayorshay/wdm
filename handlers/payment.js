@@ -45,7 +45,7 @@ app.post("/pay/:userId/:orderId", async function (req, res, next) {
                 "cost": cost,
                 "userId": userId,
                 "orderId": orderId,
-                "status": "PAYED"
+                "status": "PAID"
             };
 
             // Create payment
@@ -73,7 +73,7 @@ app.post("/cancelPayment/:userId/:orderId", function (req, res, next) {
             return next(err);
 
         // cancel the payment
-        redisClient.hset(cols.payment + orderId, cols.status, "CANCELED", (err, res) => {
+        redisClient.hset(cols.payment + orderId, cols.status, "CANCELLED", (err, res) => {
                 if (err)
                     return next(err);
 
@@ -84,7 +84,7 @@ app.post("/cancelPayment/:userId/:orderId", function (req, res, next) {
                         res.sendStatus(200);
                     },
                     paymentError => {
-                        redisClient.hset(cols.payment + orderId, cols.status, "PAYED", (err, res) => {
+                        redisClient.hset(cols.payment + orderId, cols.status, "PAID", (err, res) => {
                             // reached no return point, too bad
                             if (err)
                                 return next(err);

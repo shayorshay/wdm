@@ -4,12 +4,16 @@
     "host": "localhost"
   },
   "sql": {
-    "port": 5432
+    "port": 5432,
+    "user": "postgres",
+    "password": "postgres",
+    "host": "localhost",
+    "database": "wdm"
   },
   "endpoints" : {
-    "users": "http://127.0.0.1:8000",
-    "stock": "http://127.0.0.1:8000",
-    "orders": "http://127.0.0.1:8000",
-    "payment":"http://127.0.0.1:8000"
+    "users": "http://127.0.0.1:8000/sql",
+    "stock": "http://127.0.0.1:8000/sql",
+    "orders": "http://127.0.0.1:8000/sql",
+    "payment":"http://127.0.0.1:8000/sql"
   }
 }
