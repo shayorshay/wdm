@@ -11,9 +11,9 @@
     "database": "wdm"
   },
   "endpoints" : {
-    "users": "http://127.0.0.1:8000/sql",
-    "stock": "http://127.0.0.1:8000/sql",
-    "orders": "http://127.0.0.1:8000/sql",
-    "payment":"http://127.0.0.1:8000/sql"
+    "users": "http://127.0.0.1:8000/redis",
+    "stock": "http://127.0.0.1:8000/redis",
+    "orders": "http://127.0.0.1:8000/redis",
+    "payment":"http://127.0.0.1:8000/redis"
   }
 }
