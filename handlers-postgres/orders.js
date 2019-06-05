@@ -1,6 +1,7 @@
 const express = require('express');
 const app = express();
 const {sqlClient} = require("../data");
+const endpoints = require("../endpoints");
 
 app.post("/create/:user_id", async function (req, res, next) {
 
@@ -39,23 +40,25 @@ app.get("/find/:id", function (req, res, next) {
             return res.sendStatus(404);
         
         user_id = orderResult.rows[0].userid;
-        status = orderResult.rows[0].status;
-        let orderItems = undefined;
-        sqlClient.query(`SELECT * FROM wdm.order_item WHERE order_id = $1`,[id], async function (err, order_item) {
-        if (err)
-            return next(err);
-        if (!order_item.rows.length)
-            return res.sendStatus(404);
-
-        orderItems = order_item.rows;
-        let result = 
-        {
-            user_id,
-            orderItems,
-            status
-        };
-        res.send(result);
-        });
+        let status = await endpoints.payment.getStatus(id);
+            let orderItems = undefined;
+            sqlClient.query(`SELECT * FROM wdm.order_item WHERE order_id = $1`,[id], async function (err, order_item) {
+            if (err)
+                return next(err);
+            if (!order_item.rows.length)
+                return res.sendStatus(404);
+    
+            orderItems = order_item.rows;
+            let result = 
+            {
+                user_id,
+                orderItems,
+                status
+            };
+            res.send(result);
+            });
+       
+        
         
     });
     
@@ -113,7 +116,77 @@ app.post("/removeitem/:orderId/:itemId", function (req, res, next) {
 });
 
 app.post("/checkout/:orderId", function (req,res,next){
+    
+    const {orderId} = req.params;
+    // get userid
+    sqlClient.query(`SELECT userid FROM wdm.order WHERE id = $1`, [orderId], function(err, result){
+        if (err)
+            return next(err);
+        if (!result.rows.length)
+            return res.sendStatus(404);
+        
+            
+        userId = result.rows[0].userid;
+        // check the status
+        endpoints.payment.getStatus(orderId).then(order_status=>
+            {
+                
+                // finished
+                if ((order_status == "FINISHED")||(order_status == "CANCELED"))
+                    return res.sendStatus(403);
+                else if(order_status == "PAID")
+                {
+                    //subtract the stocks
+                    endpoints.order.get(orderId).then(order => {
+                     
+                        Object.entries(order.orderItems).forEach(item =>{
 
+                        endpoints.stock.subtract(item[1].item_id,item[1].quantity);
+            
+                        });
+        
+                     });
+                     // set status
+                     sqlClient.query("UPDATE wdm.payment SET status = 'FINISHED' WHERE order_id = $1", [orderId], function (err, result) {
+                        if (err)
+                            return next(err);
+
+                    });
+                     return res.sendStatus(200);
+                }
+                else{
+                    // calling the payment function
+                    endpoints.payment.pay(userId,orderId).then(
+                        checkoutResult=>{
+                            // subtract the stocks
+                            endpoints.order.get(orderId).then(order => {
+                     
+                                Object.entries(order.orderItems).forEach(item =>{
+        
+                                endpoints.stock.subtract(item[1].item_id,item[1].quantity);
+                    
+                                });
+                
+                             });  
+                            
+                              // set status
+                            sqlClient.query("UPDATE wdm.payment SET status = 'FINISHED' WHERE order_id = $1", [orderId], function (err, result) {
+                                if (err)
+                                return next(err);
+
+                            });
+                             return res.sendStatus(200);
+                        },
+                        checkoutError=>{
+                            if (err)
+                                return next(err);
+                        });
+                   
+                }
+            });
+        
+    });
+    
 });
 
 

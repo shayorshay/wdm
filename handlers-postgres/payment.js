@@ -61,7 +61,7 @@ app.post("/cancelPayment/:userId/:orderId", async function (req, res, next) {
             endpoints.addFunds(userId, cost).then(
 
                 paymentResult => {
-                    sqlClient.query("UPDATE wdm.payment SET status = 'CANCELLED' WHERE order_id = $1", [orderId], function (err, result) {
+                    sqlClient.query("UPDATE wdm.payment SET status = 'CANCELED' WHERE order_id = $1", [orderId], function (err, result) {
                         if (err)
                             return next(err);
 
@@ -86,11 +86,10 @@ app.get("/status/:orderId", async function (req, res, next) {
         if (err)
             return next(err);
 
-        if (!result.rows.length)
-            return res.sendStatus(404);
-
-
-        res.send({status: result.rows[0].status});
+         if (!result.rows.length)
+             res.send(result.rows[0]);
+        else
+            res.send(result.rows[0].status);
     });
 
 

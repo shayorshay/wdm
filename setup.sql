@@ -27,7 +27,7 @@ CREATE TABLE "order"
 (
     id SERIAL primary key,
     userid INTEGER REFERENCES client(id),
-    "status" VARCHAR(40)
+    
 );
 
 -- ORDERS
@@ -43,7 +43,7 @@ CREATE TABLE order_item
 -- PAYMENTS
 CREATE TABLE payment
 (
-    id SERIAL primary key,
+    id INTEGER REFERENCES "order" (id),
     cost FLOAT NOT NULL,
     order_id VARCHAR(40),
 	user_id VARCHAR(40),
