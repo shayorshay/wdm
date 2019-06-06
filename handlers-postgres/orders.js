@@ -77,8 +77,13 @@ app.get("/find/:id", function (req, res, next) {
 
 app.post("/additem/:orderId/:itemId", function (req, res, next) {
     const {orderId, itemId} = req.params;
-
-    sqlClient.query(`SELECT *
+    // if order finished, stop the function
+    sqlClient.query("SELECT status FROM wdm.order WHERE id = $1",[orderId], async function(err,result){
+        if (result.rows[0].status === "FINISHED")
+            res.sendStatus(403);
+        else{
+            
+            sqlClient.query(`SELECT *
                      FROM wdm.order_item
                      WHERE order_id = $1
                        AND item_id = $2`, [orderId, itemId], function (err, result) {
@@ -105,14 +110,19 @@ app.post("/additem/:orderId/:itemId", function (req, res, next) {
         }
 
     });
-
+}
+});   
 });
 
 app.post("/removeitem/:orderId/:itemId", function (req, res, next) {
     const {orderId, itemId} = req.params;
 
-    // subtract item to orderItems (hincrby will create a hashkey even if it is not created yet.
-    sqlClient.query(`SELECT *
+    // check status
+    sqlClient.query("SELECT status FROM wdm.order WHERE id = $1",[orderId], async function(err,result){
+        if (result.rows[0].status === "FINISHED")
+            res.sendStatus(403);
+        else{
+            sqlClient.query(`SELECT *
                      FROM wdm.order_item
                      WHERE order_id = $1
                        AND item_id = $2`, [orderId, itemId], function (err, result) {
@@ -132,7 +142,10 @@ app.post("/removeitem/:orderId/:itemId", function (req, res, next) {
             res.send(result.rows[0]);
         })
 
-    });
+            });
+        }
+        
+});
 });
 
 app.post("/checkout/:orderId", function (req, res, next) {
@@ -141,7 +154,7 @@ app.post("/checkout/:orderId", function (req, res, next) {
     sqlClient.query(`SELECT userid
                      FROM wdm.order
                      WHERE id = $1`, [orderId], async function (err, result) {
-        let order_status;
+        let payment_status;
         if (err)
             return next(err);
 
@@ -152,49 +165,54 @@ app.post("/checkout/:orderId", function (req, res, next) {
         let userId = result.rows[0].userid;
 
         try {
-            order_status = await endpoints.payment.getStatus(orderId);
+            payment_status = await endpoints.payment.getStatus(orderId);
         } catch (e) {
             return next(e);
-        }
+        }  
 
         // check the status
-        // finished
-        if (order_status === "FINISHED" || order_status === "CANCELED")
+        sqlClient.query("SELECT status FROM wdm.order WHERE id = $1",[orderId], async function(err,result){
+              
+        if (result.rows[0].status === "FINISHED" || payment_status === "CANCELED")
             return res.sendStatus(403);
-        else if (order_status === "PAID") {
+        else if (payment_status === "PAID") {
             try {
-                await subtract();
-            } catch (e) {
-                return next(e);
-            }
-        } else {
-            // calling the payment function
-            try {
-                endpoints.payment.pay(userId, orderId);
-            } catch (e) {
-                return next(e);
-            }
-
-            try {
-                await subtract();
+                await endpoints.stock.subtractOrder_sql(orderId);
             } catch (e) {
                 try {
                     await endpoints.payment.cancelPayment(userId, orderId);
                 } catch (e) {
                     return next(e);
                 }
-
+    
                 res.sendStatus(403);
             }
+        } else {
+
+            try {
+                await endpoints.stock.subtractOrder_sql(orderId);
+            } catch (e) {
+
+                return next(e);
+            } 
+            // calling the payment function
+            try {
+                endpoints.payment.pay(userId, orderId);
+                await set_status();
+                
+            } catch (e) {
+                return next(e);
+            }
         }
+        })
     });
 
-    async function subtract() {
+    async function set_status() {
         //subtract the stocks
-        await endpoints.stock.subtractOrder(orderId);
+        
 
         // set status
-        sqlClient.query("UPDATE wdm.payment SET status = 'FINISHED' WHERE order_id = $1", [orderId],
+        sqlClient.query("UPDATE wdm.order SET status = 'FINISHED' WHERE id = $1", [orderId],
             function (err) {
                 if (err)
                     return next(err);

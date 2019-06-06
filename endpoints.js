@@ -54,12 +54,37 @@ const handlers = {
             for (let i = 0; i < keys.length; i++) {
                 let item = keys[i];
                 try {
-                    handlers.stock.subtract(item, orderItems[item]);
+                    handlers.stock.subtract(item, parseInt(orderItems[item]));
+                    
                 } catch (e) {
                     while (i >= 0) {
                         let item = keys[i];
 
-                        handlers.stock.add(item, orderItems[item]);
+                        handlers.stock.add(item, parseInt(orderItems[item]));
+                        i--;
+                    }
+
+                    throw e;
+                }
+
+            }
+        },
+
+        subtractOrder_sql: async function (orderId) {
+            let {orderItems} = await handlers.order.get(orderId);
+            let keys = Object.keys(orderItems);
+
+            for (let i = 0; i < keys.length; i++) {
+                let item = keys[i];
+                console.log(orderItems[item].item_id,orderItems[item].quantity);
+                try {
+                    handlers.stock.subtract(orderItems[item].item_id, orderItems[item].quantity);
+                    
+                } catch (e) {
+                    while (i >= 0) {
+                        let item = keys[i];
+
+                        handlers.stock.add(orderItems[item].item_id, orderItems[item].quantity);
                         i--;
                     }
 

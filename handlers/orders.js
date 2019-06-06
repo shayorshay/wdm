@@ -59,16 +59,22 @@ app.get("/find/:id", function (req, res, next) {
 });
 
 
-app.post("/additem/:orderId/:itemId", function (req, res, next) {
+app.post("/additem/:orderId/:itemId", async function (req, res, next) {
     const {orderId, itemId} = req.params;
 
-    // add item to orderItems (hincrby will create a hashkey even if it is not created yet.
-    redisClient.hincrby(orderId, itemId, 1, function (err) {
+    let status = await endpoints.payment.getStatus(orderId);
+    if(status == "FINISHED")
+        res.sendStatus(403);
+    else{
+        redisClient.hincrby(orderId, itemId, 1, function (err) {
         if (err)
             return next(err);
 
         res.sendStatus(200);
-    })
+        })
+    }
+    // add item to orderItems (hincrby will create a hashkey even if it is not created yet.
+    
 });
 
 
@@ -76,7 +82,10 @@ app.post("/removeitem/:orderId/:itemId", function (req, res, next) {
 
     const {orderId, itemId} = req.params;
 
-
+    let status = await endpoints.payment.getStatus(orderId);
+    if(status == "FINISHED")
+        res.sendStatus(403);
+    else{
     // subtract item to orderItems (hincrby will create a hashkey even if it is not created yet.
     redisClient.hincrby(orderId, itemId, -1, function (err, result) {
         if (err)
@@ -96,6 +105,7 @@ app.post("/removeitem/:orderId/:itemId", function (req, res, next) {
 
         res.sendStatus(200);
     });
+}
 });
 
 
@@ -110,29 +120,26 @@ app.post("/checkout/:orderId", async function (req, res, next) {
     } catch (e) {
         return next(e);
     }
-
+    
     if (order_status === "FINISHED" || order_status === "CANCELED")
         return res.sendStatus(403);
 
-    if (order_status === "PAYED") {
+    if (order_status === "PAID") {
+        
         try {
-            await subtract();
-        } catch (e) {
-            next(e);
-        }
-        return
-    }
-
-    redisClient.hget(orderId, "user_id", async function (err, userId) {
-        //calling payment function
-        try {
-            await endpoints.payment.pay(userId, orderId);
+            await endpoints.stock.subtractOrder(orderId);
         } catch (e) {
             return next(e);
         }
+        return res.sendStatus(200);
+    }
+    else{
+    redisClient.hget(orderId, "user_id", async function (err, userId) {
+        //calling payment function
+        
 
         try {
-            await subtract();
+            await endpoints.stock.subtractOrder(orderId);
         } catch (e) {
             try {
                 await endpoints.payment.cancelPayment(userId, orderId);
@@ -142,19 +149,27 @@ app.post("/checkout/:orderId", async function (req, res, next) {
 
             res.sendStatus(403);
         }
+        try {
+            
+            await endpoints.payment.pay(userId, orderId);
+            await set_status();
+            res.sendStatus(200);
+        } catch (e) {
+            return next(e);
+        }
     });
+}
 
-
-    async function subtract() {
-        await endpoints.stock.subtractOrder(orderId);
-
+    async function set_status() {
+        
+        
         // set payment status
         redisClient.hset(cols.payment + orderId, cols.status, "FINISHED", (err, res) => {
             // reached no return point, too bad
             if (err)
                 return next(err);
 
-            res.sendStatus(200);
+            //res.sendStatus(200);
         });
     }
 });
