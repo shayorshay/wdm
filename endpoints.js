@@ -1,4 +1,5 @@
 'use strict';
+
 const request = require("request-promise-native");
 const endpoints = require("./config").endpoints;
 const prefixes = {
@@ -7,7 +8,7 @@ const prefixes = {
     payment: '/payment',
 };
 
-module.exports = {
+const handlers = {
     createUser: async function (name) {
         return request({
             uri: endpoints.users + `/users/create`,
@@ -46,6 +47,28 @@ module.exports = {
             });
         },
 
+        subtractOrder: async function (orderId) {
+            let {orderItems} = await handlers.order.get(orderId);
+            let keys = Object.keys(orderItems);
+
+            for (let i = 0; i < keys.length; i++) {
+                let item = keys[i];
+                try {
+                    handlers.stock.subtract(item, orderItems[item]);
+                } catch (e) {
+                    while (i >= 0) {
+                        let item = keys[i];
+
+                        handlers.stock.add(item, orderItems[item]);
+                        i--;
+                    }
+
+                    throw e;
+                }
+
+            }
+        },
+
         add: async function (id, amount) {
             return request({
                 uri: endpoints.stock + prefixes.stock +  `/add/${id}/${amount}`,
@@ -71,9 +94,15 @@ module.exports = {
     },
 
     payment: {
-        pay: async function (userid, orderid) {
+        pay: async function (userId, orderId) {
             return request({
-                uri: endpoints.payment + prefixes.payment +  `/pay/${userid}/${orderid}`,
+                uri: endpoints.payment + prefixes.payment +  `/pay/${userId}/${orderId}`,
+                method: 'POST'
+            });
+        },
+        cancelPayment: async function (userId, orderId) {
+            return request({
+                uri: endpoints.payment + prefixes.payment +  `/cancelPayment/${userId}/${orderId}`,
                 method: 'POST'
             });
         },
@@ -87,10 +116,4 @@ module.exports = {
 
 };
 
-//
-// (async function () {
-//     // let res = await module.exports.addFunds("asd", 3);
-//     let res = await module.exports.createUser("asd");
-//
-//     console.log(res);
-// })();
+module.exports = handlers;

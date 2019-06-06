@@ -1,7 +1,8 @@
+'use strict';
+
 const express = require('express');
 const app = express();
-const {redisClient, genId,endpoints} = require("../data");
-const endpoint = require("../endpoints");
+const {redisClient, genId, endpoints} = require("../data");
 
 const cols = {
     payment: "pmt:",
@@ -98,71 +99,64 @@ app.post("/removeitem/:orderId/:itemId", function (req, res, next) {
 });
 
 
-app.post("/checkout/:orderId", function (req,res,next){
+app.post("/checkout/:orderId", async function (req, res, next) {
+    // calling payment service
+    const {orderId} = req.params;
+    let order_status;
 
-     // calling payment service
-     const {orderId} = req.params;
-     // check status
-     endpoint.payment.getStatus(orderId).then(order_status=>
-    {
-        if ((order_status == "FINISHED")||(order_status == "CANCELED"))
-            res.sendStatus(403);
-        else if (order_status == "PAYED")
-        {
-            endpoint.order.get(orderId).then(order => {
-                            
-                Object.entries(order.orderItems).forEach(item =>{
+    // check status
+    try {
+        order_status = await endpoints.payment.getStatus(orderId);
+    } catch (e) {
+        return next(e);
+    }
 
-                    endpoint.stock.subtract(item[0],parseInt(item[1]));
-                    
-                });
-                
-            });
-             // set payment status
-             redisClient.hset(cols.payment + orderId, cols.status, "FINISHED", (err, res) => {
-                // reached no return point, too bad
-                if (err)
-                    return next(err);
-            });
-            res.sendStatus(200);
+    if (order_status === "FINISHED" || order_status === "CANCELED")
+        return res.sendStatus(403);
+
+    if (order_status === "PAYED") {
+        try {
+            await subtract();
+        } catch (e) {
+            next(e);
         }
-        else{
-            redisClient.hget(orderId,"user_id", function(err, userId){
-                //calling payment function
-                endpoint.payment.pay(userId,orderId).then(
-                    checkoutResult=>{
-                    // subtract the stocks
-                        endpoint.order.get(orderId).then(order => {
-                            
-                            Object.entries(order.orderItems).forEach(item =>{
-        
-                                endpoint.stock.subtract(item[0],parseInt(item[1]));
-                                
-                            });
-                            
-                        });
-                    // set payment status
-                    redisClient.hset(cols.payment + orderId, cols.status, "FINISHED", (err, res) => {
-                        // reached no return point, too bad
-                        if (err)
-                            return next(err);
-                    });
-                    res.sendStatus(200);
-            
-                        
-                    },
-                    checkoutError=>{
-                        if (err)
-                            return next(err);
-                        
-                    });
-                   
-             });
-        
+        return
+    }
+
+    redisClient.hget(orderId, "user_id", async function (err, userId) {
+        //calling payment function
+        try {
+            await endpoints.payment.pay(userId, orderId);
+        } catch (e) {
+            return next(e);
+        }
+
+        try {
+            await subtract();
+        } catch (e) {
+            try {
+                await endpoints.payment.cancelPayment(userId, orderId);
+            } catch (e) {
+                return next(e);
+            }
+
+            res.sendStatus(403);
         }
     });
-     
-    
+
+
+    async function subtract() {
+        await endpoints.stock.subtractOrder(orderId);
+
+        // set payment status
+        redisClient.hset(cols.payment + orderId, cols.status, "FINISHED", (err, res) => {
+            // reached no return point, too bad
+            if (err)
+                return next(err);
+
+            res.sendStatus(200);
+        });
+    }
 });
 
 module.exports = app;
