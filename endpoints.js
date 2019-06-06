@@ -8,25 +8,52 @@ const prefixes = {
     payment: '/payment',
 };
 
+/**
+ * @typedef {"OK"} OKResponse
+ */
+
 const handlers = {
+    /**
+     * @class CreateUserResponse
+     * @property userId
+     */
+
+    /**
+     *
+     * @param name
+     * @return {Promise<CreateUserResponse>}
+     */
     createUser: async function (name) {
         return request({
+            body: {name},
             uri: endpoints.users + `/users/create`,
-            method: 'GET',
+            method: 'POST',
             json: true // Automatically parses the JSON string in the response
         })
     },
 
-    addFunds: async function (id, amount) {
+    /**
+     *
+     * @param userId
+     * @param amount
+     * @return {Promise<OKResponse>}
+     */
+    addFunds: async function (userId, amount) {
         return request({
-            uri: endpoints.users + `/users/credit/add/${id}/${amount}`,
+            uri: endpoints.users + `/users/credit/add/${userId}/${amount}`,
             method: 'POST'
         });
     },
 
-    subtract: async function (id, amount) {
+    /**
+     *
+     * @param userId
+     * @param amount
+     * @return {Promise<OKResponse>}
+     */
+    subtract: async function (userId, amount) {
         return request({
-            uri: endpoints.users + `/users/credit/subtract/${id}/${amount}`,
+            uri: endpoints.users + `/users/credit/subtract/${userId}/${amount}`,
             method: 'POST'
         });
     },
@@ -71,20 +98,20 @@ const handlers = {
 
         add: async function (id, amount) {
             return request({
-                uri: endpoints.stock + prefixes.stock +  `/add/${id}/${amount}`,
+                uri: endpoints.stock + prefixes.stock + `/add/${id}/${amount}`,
                 method: 'POST'
             });
         },
         create: async function () {
             return request({
-                uri: endpoints.stock + prefixes.stock +  '/item/create',
+                uri: endpoints.stock + prefixes.stock + '/item/create',
                 method: 'POST'
             });
         },
     },
 
     order: {
-        get: async function(id) {
+        get: async function (id) {
             return request({
                 uri: endpoints.orders + prefixes.orders + `/find/${id}`,
                 method: 'GET',
@@ -96,13 +123,13 @@ const handlers = {
     payment: {
         pay: async function (userId, orderId) {
             return request({
-                uri: endpoints.payment + prefixes.payment +  `/pay/${userId}/${orderId}`,
+                uri: endpoints.payment + prefixes.payment + `/pay/${userId}/${orderId}`,
                 method: 'POST'
             });
         },
         cancelPayment: async function (userId, orderId) {
             return request({
-                uri: endpoints.payment + prefixes.payment +  `/cancelPayment/${userId}/${orderId}`,
+                uri: endpoints.payment + prefixes.payment + `/cancelPayment/${userId}/${orderId}`,
                 method: 'POST'
             });
         },
@@ -117,3 +144,25 @@ const handlers = {
 };
 
 module.exports = handlers;
+
+if (require.main === module) {
+    // noinspection JSIgnoredPromiseFromCall
+    main();
+}
+
+async function main() {
+    let result;
+    /**
+     *
+     * @type {CreateUserResponse}
+     */
+    let {userId} = await handlers.createUser("mihai");
+    console.log(require('util').inspect(userId, {depth: null, colors: true}));
+
+    result = await handlers.addFunds(userId, 50);
+    console.log(require('util').inspect(result, {depth: null, colors: true}));
+
+    result = await handlers.subtract(userId, 50);
+    console.log(require('util').inspect(result, {depth: null, colors: true}));
+
+}

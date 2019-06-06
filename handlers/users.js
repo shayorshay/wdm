@@ -10,25 +10,25 @@ app.post("/create/", async function (req, res, next) {
      * @type {User}
      */
     const body = req.body;
-    const id = genId("usr");
-    body.id = id;
+    const userId = genId("usr");
+    body.userId = userId;
 
-    redisClient.hmset(id, body, function (err) {
+    redisClient.hmset(userId, body, function (err) {
         if (err)
             return next(err);
 
-        res.send({id});
+        res.send({userId: userId});
     });
 });
 
 
-app.delete("/remove/:id", function (req, res, next) {
+app.delete("/remove/:userId", function (req, res, next) {
     /**
      * @type {string}
      */
-    const {id} = req.params;
+    const {userId} = req.params;
 
-    redisClient.del(id, function (err) {
+    redisClient.del(userId, function (err) {
         if (err)
             return next(err);
 
@@ -41,9 +41,9 @@ app.get("/find/", function (req, res, next) {
     /**
      * @type {string}
      */
-    const ids = req.query.ids;
+    const userIds = req.query.userIds;
 
-    getAllIds(ids, function (err, objects) {
+    getAllIds(userIds, function (err, objects) {
         if (err)
             return next(err);
 
@@ -51,13 +51,13 @@ app.get("/find/", function (req, res, next) {
     });
 });
 
-app.get("/credit/:id", function (req, res, next) {
+app.get("/credit/:userId", function (req, res, next) {
     /**
      * @type {string}
      */
-    const {id} = req.params;
+    const {userId} = req.params;
 
-    redisClient.hget(id, "credit", function (err, credit) {
+    redisClient.hget(userId, "credit", function (err, credit) {
         if (err)
             return next(err);
 
@@ -65,18 +65,18 @@ app.get("/credit/:id", function (req, res, next) {
     });
 });
 
-app.post("/credit/subtract/:user_id/:amount", function (req, res, next) {
+app.post("/credit/subtract/:userId/:amount", function (req, res, next) {
     /**
      * @type {string}
      */
-    const {user_id, amount} = req.params;
+    const {userId, amount} = req.params;
 
-    redisClient.hincrby(user_id, "credit", -amount, function (err, newCredit) {
+    redisClient.hincrby(userId, "credit", -amount, function (err, newCredit) {
         if (err)
             return next(err);
 
         if (newCredit < 0)
-            return redisClient.hincrby(user_id, "credit", amount, function (err) {
+            return redisClient.hincrby(userId, "credit", amount, function (err) {
                 if (err)
                     return next(err);
 
@@ -87,13 +87,13 @@ app.post("/credit/subtract/:user_id/:amount", function (req, res, next) {
     });
 });
 
-app.post("/credit/add/:user_id/:amount", function (req, res, next) {
+app.post("/credit/add/:userId/:amount", function (req, res, next) {
     /**
      * @type {string}
      */
-    const {user_id, amount} = req.params;
+    const {userId, amount} = req.params;
 
-    redisClient.hincrby(user_id, "credit", amount, function (err) {
+    redisClient.hincrby(userId, "credit", amount, function (err) {
         if (err)
             return next(err);
 

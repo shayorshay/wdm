@@ -17,7 +17,7 @@ app.post("/create/", async function (req, res, next) {
             if (err)
                 return next(err);
 
-            res.send({id: result.rows[0].id});
+            res.send({userId: result.rows[0].id});
         });
 });
 
