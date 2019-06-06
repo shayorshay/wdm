@@ -23,6 +23,9 @@ app.get("/availability/:itemId", function (req, res, next) {
         if (!item)
             return next(item);
 
+        item.price = +item.price;
+        item.stock = +item.stock;
+
         res.json(item);
     });
 });
@@ -59,9 +62,11 @@ app.post("/add/:itemId/:stock", function (req, res, next) {
 
 app.post("/item/create", function (req, res, next) {
     const itemId = genId("item");
-    const {price} = req.body;
+    let {price} = req.body;
 
-    const newItem = {id: itemId, stock: 0, price};
+    price = +price;
+
+    const newItem = {itemId, stock: 0, price};
 
     redisClient.hmset(itemId, newItem, function (err) {
         if (err)

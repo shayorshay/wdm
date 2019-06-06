@@ -6,40 +6,43 @@ const {sqlClient, sqlEndpoints} = require('../data');
 
 
 app.post('/pay/:userId/:orderId', async function (req, res, next) {
+    let order;
+    /**
+     * @type {string}
+     */
     const {userId, orderId} = req.params;
 
-    sqlClient.query('SELECT SUM(cost) FROM wdm.order_item WHERE "orderId" = $1', [orderId], function (err, result) {
+    // Get order from order service
+    try {
+        order = await sqlEndpoints.orders.get(orderId);
+    } catch (e) {
+        return next(e);
+    }
+
+    let requests = [];
+    for (let itemId in order.orderItems) {
+        requests.push(sqlEndpoints.stock.getAvailability(itemId));
+    }
+
+    let responses = await Promise.all(requests);
+
+    let sum = 0;
+    for (let response of responses) {
+        sum += response.price * order.orderItems[response.itemId];
+    }
+
+    try {
+        await sqlEndpoints.users.subtract(userId, sum);
+    } catch (e) {
+        return next(e);
+    }
+
+    // language=PostgreSQL
+    sqlClient.query('UPDATE wdm.payment SET cost = $1 WHERE "orderId" = $2', [sum, orderId], function (err, result) {
         if (err)
             return next(err);
 
-        if (result.rowCount !== 1) {
-            //something went wrong
-            return res.sendStatus(404);
-
-        } else {
-            let cost = result.rows[0].sum;
-
-            sqlClient.query('SELECT * FROM wdm.payment WHERE "orderId" = $1', [orderId], function (err, result) {
-                if (err)
-                    return next(err);
-
-                if (result.rowCount !== 1) { //no payment for order exists -- create new
-                    sqlClient.query('INSERT INTO wdm.payment ("paymentId", cost, "orderId", "userId", status) VALUES ($1, $2, $3, $4, \'PAID\')', [orderId, cost, orderId, userId], function (err, result) {
-                        if (err)
-                            return next(err);
-
-                        sqlEndpoints.subtract(userId, cost).then(
-                            paymentResult => res.sendStatus(200),
-                            paymentError => res.send(paymentError));
-
-                    });
-
-                } else {
-                    return res.sendStatus(403);
-                }
-
-            });
-        }
+        res.send();
     });
 });
 
@@ -84,14 +87,14 @@ app.get('/status/:orderId', async function (req, res, next) {
 
     const {orderId} = req.params;
 
-    sqlClient.query('SELECT status FROM wdm.payment WHERE "paymentId" = $1', [orderId], function (err, result) {
+    sqlClient.query('SELECT status FROM wdm.payment WHERE "orderId" = $1', [orderId], function (err, result) {
         if (err)
             return next(err);
 
-        if (!result.rows.length)
-            return res.sendStatus(404);
+        if (!result.rows.length || result.rows[0].cost === 0)
+            return res.send("NOT_PAYED");
 
-        res.send(result.rows[0].status);
+        res.send("PAYED");
     });
 });
 

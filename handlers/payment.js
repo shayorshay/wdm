@@ -15,55 +15,43 @@ app.get("/", function (req, res) {
 });
 
 app.post("/pay/:userId/:orderId", async function (req, res, next) {
+    let order;
     /**
      * @type {string}
      */
     const {userId, orderId} = req.params;
 
     // Get order from order service
-    const order = redisEndpoints.order.get(orderId).then(order => {
-            /**
-             *
-             * @type {number}
-             */
-            let cost = 0;
+    try {
+        order = await redisEndpoints.orders.get(orderId);
+    } catch (e) {
+        return next(e);
+    }
 
-            // for now lets assume each item costs 1 euro
-            Object.values(order.orderItems).forEach(r => {
-                cost += parseInt(r);
-            });
+    let requests = [];
+    for (let itemId in order.orderItems) {
+       requests.push(redisEndpoints.stock.getAvailability(itemId));
+    }
 
-            /**
-             * @type {string}
-             */
-            const paymentId = cols.payment + orderId;
+    let responses = await Promise.all(requests);
 
-            /**
-             * @type {Payment}
-             */
-            const payment = {
-                "id": paymentId,
-                "cost": cost,
-                "userId": userId,
-                "orderId": orderId,
-                "status": "PAID"
-            };
+    let sum = 0;
+    for (let response of responses) {
+        sum += response.price * order.orderItems[response.itemId];
+    }
 
-            // Create payment
-            redisClient.hmset(paymentId, payment, (err, result) => {
-                if (err)
-                    res.send(err);
+    try {
+        await redisEndpoints.users.subtract(userId, sum);
+    } catch (e) {
+        return next(e);
+    }
 
-                // subtract amount from user account
-                redisEndpoints.subtract(userId, cost).then(
-                    paymentResult => res.sendStatus(200),
-                    paymentError => res.send(paymentError));
+    redisClient.set(cols.payment + orderId, sum, (err) => {
+        if (err)
+            return next(err);
 
-            });
-        },
-        error => {
-            res.send(error);
-        });
+        res.sendStatus(200);
+    });
 });
 
 app.post("/cancelPayment/:userId/:orderId", function (req, res, next) {
@@ -71,12 +59,12 @@ app.post("/cancelPayment/:userId/:orderId", function (req, res, next) {
 
     redisClient.hgetall(cols.payment, function (err, payment) {
         if (err)
-            return next(err);
+            return next(new Error(err.message));
 
         // cancel the payment
         redisClient.hset(cols.payment + orderId, cols.status, "CANCELLED", (err, res) => {
                 if (err)
-                    return next(err);
+                    return next(new Error(err.message));
 
                 // add funds to user
                 redisEndpoints.addFunds(userId, payment.cost).then(
@@ -88,7 +76,7 @@ app.post("/cancelPayment/:userId/:orderId", function (req, res, next) {
                         redisClient.hset(cols.payment + orderId, cols.status, "PAID", (err, res) => {
                             // reached no return point, too bad
                             if (err)
-                                return next(err);
+                                return next(new Error(err.message));
                         });
                     });
 
@@ -107,12 +95,15 @@ app.get("/status/:orderId", function (req, res, next) {
      */
     const {orderId} = req.params;
 
-    redisClient.hget(cols.payment + orderId, cols.status, (err, status) => {
+    redisClient.get(cols.payment + orderId, (err, cost) => {
         if (err)
             return next(err);
 
-        res.send(status);
-    })
+        if (cost)
+            res.send("PAYED");
+
+        else res.send("NOT_PAYED");
+    });
 });
 
 module.exports = app;

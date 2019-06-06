@@ -98,20 +98,19 @@ function Endpoints(base) {
                 });
             },
 
-            subtractOrder: async (orderId) => {
-                let {orderItems} = await this.endpoints.orders.get(orderId);
+            subtractOrder: async (orderItems) => {
                 let keys = Object.keys(orderItems);
 
                 for (let i = 0; i < keys.length; i++) {
                     let item = keys[i];
                     try {
-                        this.endpoints.stock.subtract(item, orderItems[item]);
+                        this.stock.subtract(item, orderItems[item]);
 
                     } catch (e) {
                         while (--i >= 0) {
                             let item = keys[i];
 
-                            this.endpoints.stock.add(item, orderItems[item]);
+                            this.stock.add(item, orderItems[item]);
                         }
 
                         throw e;
@@ -196,9 +195,9 @@ function Endpoints(base) {
                     method: 'POST'
                 });
             },
-            getStatus: async (id) => {
+            getStatus: async (orderId) => {
                 return request({
-                    uri: this.endpoints.payment + `/status/${id}`,
+                    uri: this.endpoints.payment + `/status/${orderId}`,
                     method: 'GET'
                 });
             }
@@ -230,7 +229,7 @@ async function main() {
  * @return {Promise<void>}
  */
 async function testEndpoint(handlers) {
-    let assert = require("assert");
+    const assert = require("assert");
 
     function assertObj(tr, received) {
         for (let k in tr) {
@@ -304,15 +303,14 @@ async function testEndpoint(handlers) {
         await assertWrongStatus(handlers.orders.get(orderId), 404);
     }
 
-    let {orderId} = createAndPopulateOrder();
+    let {orderId} = await createAndPopulateOrder();
+
+    result = await handlers.payment.getStatus(orderId);
+    assert.strictEqual(result, "NOT_PAYED");
 
 
-    // todo
-    // result = await handlers.stock.subtractOrder(itemId);
-    // assertObj({
-    //     number: '20',
-    //     price: '10'
-    // }, result);
+    result = await handlers.orders.checkout(orderId);
+    console.log(require('util').inspect(result, {depth: null, colors: true}));
 
     async function createAndPopulateOrder() {
         let {orderId} = await handlers.orders.create(userId);
@@ -322,7 +320,7 @@ async function testEndpoint(handlers) {
 
         let orderItems = {};
         orderItems[itemId] = 1;
-        let order = {orderItems, status: ''};
+        let order = {orderItems, status: 'NOT_PAYED'};
         result = await handlers.orders.get(orderId);
         assertObj(order, result);
 

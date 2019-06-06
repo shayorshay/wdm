@@ -131,84 +131,58 @@ app.delete("/removeItem/:orderId/:itemId", function (req, res, next) {
     });
 });
 
-app.post("/checkout/:orderId", function (req, res, next) {
+app.post("/checkout/:orderId", async function (req, res, next) {
+    // calling payment service
     const {orderId} = req.params;
-    // get userId
-    sqlClient.query(`SELECT "userId"
-                     FROM wdm.order
-                     WHERE "orderId" = $1`, [orderId], async function (err, result) {
-        let order_status;
+    let order_status;
+
+    // check status
+    try {
+        order_status = await sqlEndpoints.payment.getStatus(orderId);
+    } catch (e) {
+        return next(e);
+    }
+
+    if (order_status === "PAYED")
+        return res.sendStatus(403);
+
+
+    // language=PostgreSQL
+    sqlClient.query(`SELECT * FROM wdm.order_item WHERE "orderId" = ${orderId}; SELECT "userId" FROM wdm."order" where "orderId" = ${orderId};`, async function (err, results) {
         if (err)
             return next(err);
 
-        if (!result.rows.length)
+        if (!results[1].rows)
             return res.sendStatus(404);
 
 
-        let userId = result.rows[0].userId;
+        let userId = results[1].rows[0].userId;
 
         try {
-            order_status = await sqlEndpoints.payment.getStatus(orderId);
+            await sqlEndpoints.payment.pay(userId, orderId);
         } catch (e) {
             return next(e);
         }
 
-        // check the status
-        sqlClient.query("SELECT status FROM wdm.order WHERE \"orderId\" = $1", [orderId], async function (err, result) {
-
-            if (result.rows[0].status === "FINISHED" || payment_status === "CANCELED")
-                return res.sendStatus(403);
-            else if (payment_status === "PAID") {
-                try {
-                    await sqlEndpoints.stock.subtractOrder_sql(orderId);
-                } catch (e) {
-                    try {
-                        await sqlEndpoints.payment.cancelPayment(userId, orderId);
-                    } catch (e) {
-                        return next(e);
-                    }
-
-                    res.sendStatus(403);
-                }
-            } else {
-
-                try {
-                    await sqlEndpoints.stock.subtractOrder_sql(orderId);
-                } catch (e) {
-
-                    return next(e);
-                }
-                // calling the payment function
-                try {
-                    sqlEndpoints.payment.pay(userId, orderId);
-                    await set_status();
-
-                } catch (e) {
-                    try {
-                        await sqlEndpoints.payment.cancelPayment(userId, orderId);
-                    } catch (e) {
-                        return next(e);
-                    }
-
-                    res.sendStatus(403);
-                }
+        let orderItems = {};
+        for (let row of results[0].rows) {
+            orderItems[row.itemId] = row.quantity;
+        }
+        try {
+            await sqlEndpoints.stock.subtractOrder(orderItems);
+        } catch (e) {
+            try {
+                await sqlEndpoints.payment.cancelPayment(userId, orderId);
+            } catch (e) {
+                return next(new Error(e.message));
             }
-        })
+
+            res.sendStatus(403);
+        }
+
+        res.sendStatus(200);
+
     });
-
-    async function set_status() {
-        //subtract the stocks
-
-
-        // set status
-        sqlClient.query("UPDATE wdm.payment SET status = 'FINISHED' WHERE \"orderId\" = $1", [orderId],
-            function (err) {
-                if (err)
-                    return next(err);
-
-                res.sendStatus(200);
-            });
-    }
 });
 
 module.exports = app;

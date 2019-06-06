@@ -8,6 +8,7 @@ const cols = {
     payment: "pmt:",
     status: "status"
 };
+
 app.post("/create/:userId", async function (req, res, next) {
     const {userId} = req.params;
 
@@ -34,10 +35,10 @@ app.delete("/remove/:id", function (req, res, next) {
     });
 });
 
-app.get("/find/:id", function (req, res, next) {
-    const {id} = req.params;
+app.get("/find/:orderId", function (req, res, next) {
+    const {orderId} = req.params;
 
-    redisClient.hgetall(id, async function (err, orderItems) {
+    redisClient.hgetall(orderId, async function (err, orderItems) {
         if (err)
             return next(err);
 
@@ -48,7 +49,7 @@ app.get("/find/:id", function (req, res, next) {
 
         orderItems.userId = undefined;
 
-        let status = await redisEndpoints.payment.getStatus(id);
+        let status = await redisEndpoints.payment.getStatus(orderId);
 
         let result = {
             userId,
@@ -65,18 +66,16 @@ app.post("/addItem/:orderId/:itemId", async function (req, res, next) {
     const {orderId, itemId} = req.params;
 
     let status = await redisEndpoints.payment.getStatus(orderId);
-    if(status == "FINISHED")
+    if (status === "PAYED")
         res.sendStatus(403);
-    else{
+    else {
         redisClient.hincrby(orderId, itemId, 1, function (err) {
-        if (err)
-            return next(err);
+            if (err)
+                return next(err);
 
-        res.sendStatus(200);
+            res.sendStatus(200);
         })
     }
-    // add item to orderItems (hincrby will create a hashkey even if it is not created yet.
-
 });
 
 
@@ -85,29 +84,30 @@ app.delete("/removeItem/:orderId/:itemId", async function (req, res, next) {
     const {orderId, itemId} = req.params;
 
     let status = await redisEndpoints.payment.getStatus(orderId);
-    if(status === "FINISHED")
+    if (status === "PAYED")
         res.sendStatus(403);
-    else{
-    // subtract item to orderItems (hincrby will create a hashkey even if it is not created yet.
-    redisClient.hincrby(orderId, itemId, -1, function (err, result) {
-        if (err)
-            return next(err);
 
-        if (result < 0) {
-            // add item to orderItems (hincrby will create a hashkey even if it is not created yet.
-            redisClient.hincrby(orderId, itemId, 1, function (err) {
-                if (err)
-                    return next(err);
+    else {
+        // subtract item to orderItems (hincrby will create a hashkey even if it is not created yet.
+        redisClient.hincrby(orderId, itemId, -1, function (err, result) {
+            if (err)
+                return next(err);
 
-                res.sendStatus(403);
-            });
+            if (result < 0) {
+                // add item to orderItems (hincrby will create a hashkey even if it is not created yet.
+                redisClient.hincrby(orderId, itemId, 1, function (err) {
+                    if (err)
+                        return next(err);
 
-            return;
-        }
+                    res.sendStatus(403);
+                });
 
-        res.sendStatus(200);
-    });
-}
+                return;
+            }
+
+            res.sendStatus(200);
+        });
+    }
 });
 
 
@@ -123,57 +123,38 @@ app.post("/checkout/:orderId", async function (req, res, next) {
         return next(e);
     }
 
-    if (order_status === "FINISHED" || order_status === "CANCELED")
+    if (order_status === "PAYED")
         return res.sendStatus(403);
 
-    if (order_status === "PAID") {
+
+    redisClient.hgetall(orderId, async function (err, orderItems) {
+        if (err)
+            return next(err);
+
+        let {userId} = orderItems;
+        orderItems.userId = undefined;
 
         try {
-            await redisEndpoints.stock.subtractOrder(orderId);
+            await redisEndpoints.payment.pay(userId, orderId);
         } catch (e) {
             return next(e);
         }
-        return res.sendStatus(200);
-    }
-    else{
-    redisClient.hget(orderId, "userId", async function (err, userId) {
-        //calling payment function
-
 
         try {
-            await redisEndpoints.stock.subtractOrder(orderId);
+            await redisEndpoints.stock.subtractOrder(orderItems);
         } catch (e) {
             try {
                 await redisEndpoints.payment.cancelPayment(userId, orderId);
             } catch (e) {
-                return next(e);
+                return next(new Error(e.message));
             }
 
             res.sendStatus(403);
         }
-        try {
 
-            await redisEndpoints.payment.pay(userId, orderId);
-            await set_status();
-            res.sendStatus(200);
-        } catch (e) {
-            return next(e);
-        }
+        res.sendStatus(200);
+
     });
-}
-
-    async function set_status() {
-
-
-        // set payment status
-        redisClient.hset(cols.payment + orderId, cols.status, "FINISHED", (err, res) => {
-            // reached no return point, too bad
-            if (err)
-                return next(err);
-
-            //res.sendStatus(200);
-        });
-    }
 });
 
 module.exports = app;

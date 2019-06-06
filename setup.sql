@@ -44,6 +44,5 @@ CREATE TABLE payment
     "paymentId" SERIAL primary key,
     cost        FLOAT NOT NULL,
     "orderId"   INTEGER,
-    "userId"    INTEGER,
-    status      VARCHAR(40)
+    "userId"    INTEGER
 );
