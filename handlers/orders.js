@@ -2,7 +2,7 @@
 
 const express = require('express');
 const app = express();
-const {redisClient, genId, endpoints} = require("../data");
+const {redisClient, genId, redisEndpoints} = require("../data");
 
 const cols = {
     payment: "pmt:",
@@ -46,7 +46,7 @@ app.get("/find/:id", function (req, res, next) {
 
         orderItems.user_id = undefined;
 
-        let status = await endpoints.payment.getStatus(id);
+        let status = await redisEndpoints.payment.getStatus(id);
 
         let result = {
             user_id,
@@ -106,7 +106,7 @@ app.post("/checkout/:orderId", async function (req, res, next) {
 
     // check status
     try {
-        order_status = await endpoints.payment.getStatus(orderId);
+        order_status = await redisEndpoints.payment.getStatus(orderId);
     } catch (e) {
         return next(e);
     }
@@ -126,7 +126,7 @@ app.post("/checkout/:orderId", async function (req, res, next) {
     redisClient.hget(orderId, "user_id", async function (err, userId) {
         //calling payment function
         try {
-            await endpoints.payment.pay(userId, orderId);
+            await redisEndpoints.payment.pay(userId, orderId);
         } catch (e) {
             return next(e);
         }
@@ -135,7 +135,7 @@ app.post("/checkout/:orderId", async function (req, res, next) {
             await subtract();
         } catch (e) {
             try {
-                await endpoints.payment.cancelPayment(userId, orderId);
+                await redisEndpoints.payment.cancelPayment(userId, orderId);
             } catch (e) {
                 return next(e);
             }
@@ -146,7 +146,7 @@ app.post("/checkout/:orderId", async function (req, res, next) {
 
 
     async function subtract() {
-        await endpoints.stock.subtractOrder(orderId);
+        await redisEndpoints.stock.subtractOrder(orderId);
 
         // set payment status
         redisClient.hset(cols.payment + orderId, cols.status, "FINISHED", (err, res) => {

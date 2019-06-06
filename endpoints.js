@@ -2,17 +2,25 @@
 
 const request = require("request-promise-native");
 const endpoints = require("./config").endpoints;
-const prefixes = {
-    stock: '/stock',
-    orders: '/orders',
-    payment: '/payment',
-};
 
 /**
  * @typedef {"OK"} OKResponse
  */
 
-const handlers = {
+function Endpoints(base) {
+    base += '/';
+    let e = JSON.parse(JSON.stringify(endpoints));
+
+    for (let k in e)
+        e[k] += base + '/' + k;
+
+    /**
+     * @type {{users, stock, payment, orders, payment}}
+     */
+    this.endpoints = e;
+}
+
+Endpoints.prototype = {
     /**
      * @class CreateUserResponse
      * @property userId
@@ -26,7 +34,7 @@ const handlers = {
     createUser: async function (name) {
         return request({
             body: {name},
-            uri: endpoints.users + `/users/create`,
+            uri: this.endpoints.users + `/create`,
             method: 'POST',
             json: true // Automatically parses the JSON string in the response
         })
@@ -40,7 +48,7 @@ const handlers = {
      */
     addFunds: async function (userId, amount) {
         return request({
-            uri: endpoints.users + `/users/credit/add/${userId}/${amount}`,
+            uri: this.endpoints.users + `/credit/add/${userId}/${amount}`,
             method: 'POST'
         });
     },
@@ -53,7 +61,7 @@ const handlers = {
      */
     subtract: async function (userId, amount) {
         return request({
-            uri: endpoints.users + `/users/credit/subtract/${userId}/${amount}`,
+            uri: this.endpoints.users + `/credit/subtract/${userId}/${amount}`,
             method: 'POST'
         });
     },
@@ -62,14 +70,14 @@ const handlers = {
 
         getAvailability: async function (id) {
             return request({
-                uri: endpoints.stock + prefixes.stock + `/availability/${id}`,
+                uri: this.endpoints.stock + prefixes.stock + `/availability/${id}`,
                 method: 'GET'
             });
         },
 
         subtract: async function (id, amount) {
             return request({
-                uri: endpoints.stock + prefixes.stock + `/subtract/${id}/${amount}`,
+                uri: this.endpoints.stock + prefixes.stock + `/subtract/${id}/${amount}`,
                 method: 'POST'
             });
         },
@@ -98,13 +106,13 @@ const handlers = {
 
         add: async function (id, amount) {
             return request({
-                uri: endpoints.stock + prefixes.stock + `/add/${id}/${amount}`,
+                uri: this.endpoints.stock + prefixes.stock + `/add/${id}/${amount}`,
                 method: 'POST'
             });
         },
         create: async function () {
             return request({
-                uri: endpoints.stock + prefixes.stock + '/item/create',
+                uri: this.endpoints.stock + prefixes.stock + '/item/create',
                 method: 'POST'
             });
         },
@@ -113,7 +121,7 @@ const handlers = {
     order: {
         get: async function (id) {
             return request({
-                uri: endpoints.orders + prefixes.orders + `/find/${id}`,
+                uri: this.endpoints.orders + prefixes.orders + `/find/${id}`,
                 method: 'GET',
                 json: true
             });
@@ -123,19 +131,19 @@ const handlers = {
     payment: {
         pay: async function (userId, orderId) {
             return request({
-                uri: endpoints.payment + prefixes.payment + `/pay/${userId}/${orderId}`,
+                uri: this.endpoints.payment + prefixes.payment + `/pay/${userId}/${orderId}`,
                 method: 'POST'
             });
         },
         cancelPayment: async function (userId, orderId) {
             return request({
-                uri: endpoints.payment + prefixes.payment + `/cancelPayment/${userId}/${orderId}`,
+                uri: this.endpoints.payment + prefixes.payment + `/cancelPayment/${userId}/${orderId}`,
                 method: 'POST'
             });
         },
         getStatus: async function (id) {
             return request({
-                uri: endpoints.payment + prefixes.payment + `/status/${id}`,
+                uri: this.endpoints.payment + prefixes.payment + `/status/${id}`,
                 method: 'GET'
             });
         }
@@ -143,7 +151,9 @@ const handlers = {
 
 };
 
-module.exports = handlers;
+let sqlEndpoints = new Endpoints('sql'), redisEndpoints = new Endpoints('redis');
+
+module.exports = {sqlEndpoints, redisEndpoints};
 
 if (require.main === module) {
     // noinspection JSIgnoredPromiseFromCall
@@ -151,6 +161,7 @@ if (require.main === module) {
 }
 
 async function main() {
+    let handlers = redisEndpoints;
     let result;
     /**
      *

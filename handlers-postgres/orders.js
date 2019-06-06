@@ -2,31 +2,30 @@
 
 const express = require('express');
 const app = express();
-const {sqlClient} = require("../data");
-const endpoints = require("../endpoints");
+const {sqlClient, sqlEndpoints} = require("../data");
 
-app.post("/create/:user_id", function (req, res, next) {
+app.post("/create/:userId", function (req, res, next) {
 
-    const {user_id} = req.params;
+    const {userId} = req.params;
 
     // create empty orderItems key
-    sqlClient.query(`INSERT INTO wdm.order(userid)
-                     VALUES ($1) RETURNING id, userid`, [user_id],
+    sqlClient.query(`INSERT INTO wdm.order("userId")
+                     VALUES ($1) RETURNING "userId", "orderId"`, [userId],
         function (err, result) {
             if (err)
                 return next(err);
 
-            res.send({orderId: result.rows[0].id});
+            res.send({orderId: result.rows[0].orderId});
         });
 });
 
-app.delete("/remove/:id", function (req, res, next) {
+app.delete("/remove/:orderId", function (req, res, next) {
 
-    const {id} = req.params;
+    const {orderId} = req.params;
 
     sqlClient.query(`DELETE
                      FROM wdm.order
-                     WHERE id = $1`, [id], function (err) {
+                     WHERE "orderId" = $1`, [orderId], function (err) {
         if (err)
             return next(err);
 
@@ -34,12 +33,12 @@ app.delete("/remove/:id", function (req, res, next) {
     });
 });
 
-app.get("/find/:id", function (req, res, next) {
-    const {id} = req.params;
+app.get("/find/:orderId", function (req, res, next) {
+    const {orderId} = req.params;
 
     sqlClient.query(`SELECT *
                      FROM wdm.order
-                     WHERE id = $1`, [id], async function (err, orderResult) {
+                     WHERE "orderId" = $1`, [orderId], async function (err, orderResult) {
         let status;
         if (err)
             return next(err);
@@ -47,15 +46,15 @@ app.get("/find/:id", function (req, res, next) {
         if (!orderResult.rows.length)
             return res.sendStatus(404);
 
-        let user_id = orderResult.rows[0].userid;
+        let userId = orderResult.rows[0].userId;
         try {
-            status = await endpoints.payment.getStatus(id);
+            status = await sqlEndpoints.payment.getStatus(id);
         } catch (e) {
             return next(e);
         }
         sqlClient.query(`SELECT *
                          FROM wdm.order_item
-                         WHERE order_id = $1`, [id], function (err, order_item) {
+                         WHERE "orderId" = $1`, [id], function (err, order_item) {
             if (err)
                 return next(err);
             if (!order_item.rows.length)
@@ -63,7 +62,7 @@ app.get("/find/:id", function (req, res, next) {
 
             let orderItems = order_item.rows;
             let result = {
-                user_id,
+                userId,
                 orderItems,
                 status
             };
@@ -80,12 +79,12 @@ app.post("/additem/:orderId/:itemId", function (req, res, next) {
 
     sqlClient.query(`SELECT *
                      FROM wdm.order_item
-                     WHERE order_id = $1
-                       AND item_id = $2`, [orderId, itemId], function (err, result) {
-        // no rows in table where order_id = orderId
+                     WHERE "orderId" = $1
+                       AND "itemId" = $2`, [orderId, itemId], function (err, result) {
+        // no rows in table where "orderId" = orderId
         if (!result.rows.length) {
-            sqlClient.query(`INSERT INTO wdm.order_item(order_id, item_id, quantity)
-                             VALUES ($1, $2, $3) RETURNING order_id, item_id, quantity `, [orderId, itemId, 1], function (err, result) {
+            sqlClient.query(`INSERT INTO wdm.order_item("orderId", "itemId", quantity)
+                             VALUES ($1, $2, $3) RETURNING "orderId", "itemId", quantity `, [orderId, itemId, 1], function (err, result) {
                 if (err)
                     return next(err);
 
@@ -95,8 +94,8 @@ app.post("/additem/:orderId/:itemId", function (req, res, next) {
         } else {
             sqlClient.query(`UPDATE wdm.order_item
                              SET quantity = quantity + 1
-                             WHERE order_id = $1
-                               AND item_id = $2`, [orderId, itemId], function (err, result) {
+                             WHERE "orderId" = $1
+                               AND "itemId" = $2`, [orderId, itemId], function (err, result) {
                 if (err)
                     return next(err);
 
@@ -114,17 +113,17 @@ app.post("/removeitem/:orderId/:itemId", function (req, res, next) {
     // subtract item to orderItems (hincrby will create a hashkey even if it is not created yet.
     sqlClient.query(`SELECT *
                      FROM wdm.order_item
-                     WHERE order_id = $1
-                       AND item_id = $2`, [orderId, itemId], function (err, result) {
-        // no rows in table where order_id = orderId
+                     WHERE "orderId" = $1
+                       AND "itemId" = $2`, [orderId, itemId], function (err, result) {
+        // no rows in table where "orderId" = orderId
         if (!result.rows.length)
             return res.sendStatus(404);
 
 
         sqlClient.query(`UPDATE wdm.order_item
                          SET quantity = quantity - 1
-                         WHERE order_id = $1
-                           AND item_id = $2
+                         WHERE "orderId" = $1
+                           AND "itemId" = $2
                            AND quantity > 0`, [orderId, itemId], function (err, result) {
             if (err)
                 return next(err);
@@ -137,10 +136,10 @@ app.post("/removeitem/:orderId/:itemId", function (req, res, next) {
 
 app.post("/checkout/:orderId", function (req, res, next) {
     const {orderId} = req.params;
-    // get userid
-    sqlClient.query(`SELECT userid
+    // get userId
+    sqlClient.query(`SELECT "userId"
                      FROM wdm.order
-                     WHERE id = $1`, [orderId], async function (err, result) {
+                     WHERE "orderId" = $1`, [orderId], async function (err, result) {
         let order_status;
         if (err)
             return next(err);
@@ -149,10 +148,10 @@ app.post("/checkout/:orderId", function (req, res, next) {
             return res.sendStatus(404);
 
 
-        let userId = result.rows[0].userid;
+        let userId = result.rows[0].userId;
 
         try {
-            order_status = await endpoints.payment.getStatus(orderId);
+            order_status = await sqlEndpoints.payment.getStatus(orderId);
         } catch (e) {
             return next(e);
         }
@@ -170,7 +169,7 @@ app.post("/checkout/:orderId", function (req, res, next) {
         } else {
             // calling the payment function
             try {
-                endpoints.payment.pay(userId, orderId);
+                sqlEndpoints.payment.pay(userId, orderId);
             } catch (e) {
                 return next(e);
             }
@@ -179,7 +178,7 @@ app.post("/checkout/:orderId", function (req, res, next) {
                 await subtract();
             } catch (e) {
                 try {
-                    await endpoints.payment.cancelPayment(userId, orderId);
+                    await sqlEndpoints.payment.cancelPayment(userId, orderId);
                 } catch (e) {
                     return next(e);
                 }
@@ -191,10 +190,10 @@ app.post("/checkout/:orderId", function (req, res, next) {
 
     async function subtract() {
         //subtract the stocks
-        await endpoints.stock.subtractOrder(orderId);
+        await sqlEndpoints.stock.subtractOrder(orderId);
 
         // set status
-        sqlClient.query("UPDATE wdm.payment SET status = 'FINISHED' WHERE order_id = $1", [orderId],
+        sqlClient.query("UPDATE wdm.payment SET status = 'FINISHED' WHERE \"orderId\" = $1", [orderId],
             function (err) {
                 if (err)
                     return next(err);
