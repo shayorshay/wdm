@@ -4,11 +4,7 @@
     "host": "localhost"
   },
   "sql": {
-    "port": 5432,
-    "user": "postgres",
-    "password": "postgres",
-    "host": "localhost",
-    "database": "wdm"
+    "port": 5432
   },
   "endpoints" : {
     "users": "http://127.0.0.1:8000/redis",
