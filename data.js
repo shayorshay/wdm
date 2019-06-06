@@ -4,7 +4,7 @@ const redis = require("redis");
 const config = require("./config");
 const redisClient = config.redis ? redis.createClient(config.redis) : null;
 const crypto = require('crypto');
-const endpoints = require("./endpoints");
+const {sqlEndpoints, redisEndpoints} = require("./endpoints");
 
 const {Client} = require('pg');
 let aux = null;
@@ -51,5 +51,6 @@ module.exports = {
     getAllIds,
     getItemId,
     genId,
-    endpoints
+    sqlEndpoints,
+    redisEndpoints
 };

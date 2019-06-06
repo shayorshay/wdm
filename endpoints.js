@@ -2,143 +2,223 @@
 
 const request = require("request-promise-native");
 const endpoints = require("./config").endpoints;
-const prefixes = {
-    stock: '/stock',
-    orders: '/orders',
-    payment: '/payment',
-};
 
-const handlers = {
-    createUser: async function (name) {
-        return request({
-            uri: endpoints.users + `/users/create`,
-            method: 'GET',
-            json: true // Automatically parses the JSON string in the response
-        })
-    },
+/**
+ * @typedef {"OK"} OKResponse
+ */
 
-    addFunds: async function (id, amount) {
-        return request({
-            uri: endpoints.users + `/users/credit/add/${id}/${amount}`,
-            method: 'POST'
-        });
-    },
+function Endpoints(base) {
+    base += '/';
+    let e = JSON.parse(JSON.stringify(endpoints));
 
-    subtract: async function (id, amount) {
-        return request({
-            uri: endpoints.users + `/users/credit/subtract/${id}/${amount}`,
-            method: 'POST'
-        });
-    },
+    for (let k in e)
+        e[k] += base + k;
 
-    stock: {
+    /**
+     * @type {{users, stock, payment, orders, payment}}
+     */
+    this.endpoints = e;
 
-        getAvailability: async function (id) {
-            return request({
-                uri: endpoints.stock + prefixes.stock + `/availability/${id}`,
-                method: 'GET'
-            });
-        },
+    Object.assign(this, {
+        users: {
+            /**
+             * @class CreateUserResponse
+             * @property userId
+             */
 
-        subtract: async function (id, amount) {
-            return request({
-                uri: endpoints.stock + prefixes.stock + `/subtract/${id}/${amount}`,
-                method: 'POST'
-            });
-        },
+            /**
+             *
+             * @param name
+             * @return {Promise<CreateUserResponse>}
+             */
+            createUser: async (name) => {
+                return request({
+                    body: {name},
+                    uri: this.endpoints.users + `/create`,
+                    method: 'POST',
+                    json: true // Automatically parses the JSON string in the response
+                })
+            },
 
-        subtractOrder: async function (orderId) {
-            let {orderItems} = await handlers.order.get(orderId);
-            let keys = Object.keys(orderItems);
+            /**
+             *
+             * @param userId
+             * @param amount
+             * @return {Promise<OKResponse>}
+             */
+            addFunds: async (userId, amount) => {
+                return request({
+                    uri: this.endpoints.users + `/credit/add/${userId}/${amount}`,
+                    method: 'POST'
+                });
+            },
 
-            for (let i = 0; i < keys.length; i++) {
-                let item = keys[i];
-                try {
-                    handlers.stock.subtract(item, parseInt(orderItems[item]));
-                    
-                } catch (e) {
-                    while (i >= 0) {
-                        let item = keys[i];
+            /**
+             *
+             * @param userId
+             * @param amount
+             * @return {Promise<OKResponse>}
+             */
+            subtract: async (userId, amount) => {
+                return request({
+                    uri: this.endpoints.users + `/credit/subtract/${userId}/${amount}`,
+                    method: 'POST'
+                });
+            },
 
-                        handlers.stock.add(item, parseInt(orderItems[item]));
-                        i--;
-                    }
-
-                    throw e;
-                }
-
+            /**
+             *
+             * @param userId
+             * @return {Promise<User>}
+             */
+            info: async (userId) => {
+                return request({
+                    uri: this.endpoints.users + `/find/${userId}`,
+                    json: true, // Automatically parses the JSON string in the response
+                    method: 'GET'
+                });
             }
         },
 
-        subtractOrder_sql: async function (orderId) {
-            let {orderItems} = await handlers.order.get(orderId);
-            let keys = Object.keys(orderItems);
+        
 
-            for (let i = 0; i < keys.length; i++) {
-                let item = keys[i];
-                console.log(orderItems[item].item_id,orderItems[item].quantity);
-                try {
-                    handlers.stock.subtract(orderItems[item].item_id, orderItems[item].quantity);
-                    
-                } catch (e) {
-                    while (i >= 0) {
-                        let item = keys[i];
+        
+        stock: {
 
-                        handlers.stock.add(orderItems[item].item_id, orderItems[item].quantity);
-                        i--;
+            getAvailability: async (id) => {
+                return request({
+                    uri: this.endpoints.stock + `/availability/${id}`,
+                    method: 'GET'
+                });
+            },
+
+            subtract: async (id, amount) => {
+                return request({
+                    uri: this.endpoints.stock + `/subtract/${id}/${amount}`,
+                    method: 'POST'
+                });
+            },
+
+            subtractOrder: async function (orderId) {
+                let {orderItems} = await handlers.order.get(orderId);
+                let keys = Object.keys(orderItems);
+    
+                for (let i = 0; i < keys.length; i++) {
+                    let item = keys[i];
+                    try {
+                        handlers.stock.subtract(item, parseInt(orderItems[item]));
+                        
+                    } catch (e) {
+                        while (i >= 0) {
+                            let item = keys[i];
+    
+                            handlers.stock.add(item, parseInt(orderItems[item]));
+                            i--;
+                        }
+    
+                        throw e;
                     }
-
-                    throw e;
+    
                 }
+            },
+    
+            subtractOrder_sql: async function (orderId) {
+                let {orderItems} = await handlers.order.get(orderId);
+                let keys = Object.keys(orderItems);
+    
+                for (let i = 0; i < keys.length; i++) {
+                    let item = keys[i];
+                    console.log(orderItems[item].item_id,orderItems[item].quantity);
+                    try {
+                        handlers.stock.subtract(orderItems[item].item_id, orderItems[item].quantity);
+                        
+                    } catch (e) {
+                        while (i >= 0) {
+                            let item = keys[i];
+    
+                            handlers.stock.add(orderItems[item].item_id, orderItems[item].quantity);
+                            i--;
+                        }
+    
+                        throw e;
+                    }
+    
+                }
+            },
 
+            add: async (id, amount) => {
+                return request({
+                    uri: this.endpoints.stock + `/add/${id}/${amount}`,
+                    method: 'POST'
+                });
+            },
+            create: async () => {
+                return request({
+                    uri: this.endpoints.stock + '/item/create',
+                    method: 'POST'
+                });
+            },
+        },
+
+        order: {
+            get: async (id) => {
+                return request({
+                    uri: this.endpoints.orders + `/find/${id}`,
+                    method: 'GET',
+                    json: true
+                });
             }
         },
 
-        add: async function (id, amount) {
-            return request({
-                uri: endpoints.stock + prefixes.stock +  `/add/${id}/${amount}`,
-                method: 'POST'
-            });
-        },
-        create: async function () {
-            return request({
-                uri: endpoints.stock + prefixes.stock +  '/item/create',
-                method: 'POST'
-            });
-        },
-    },
-
-    order: {
-        get: async function(id) {
-            return request({
-                uri: endpoints.orders + prefixes.orders + `/find/${id}`,
-                method: 'GET',
-                json: true
-            });
+        payment: {
+            pay: async (userId, orderId) => {
+                return request({
+                    uri: this.endpoints.payment + `/pay/${userId}/${orderId}`,
+                    method: 'POST'
+                });
+            },
+            cancelPayment: async (userId, orderId) => {
+                return request({
+                    uri: this.endpoints.payment + `/cancelPayment/${userId}/${orderId}`,
+                    method: 'POST'
+                });
+            },
+            getStatus: async (id) => {
+                return request({
+                    uri: this.endpoints.payment + `/status/${id}`,
+                    method: 'GET'
+                });
+            }
         }
-    },
 
-    payment: {
-        pay: async function (userId, orderId) {
-            return request({
-                uri: endpoints.payment + prefixes.payment +  `/pay/${userId}/${orderId}`,
-                method: 'POST'
-            });
-        },
-        cancelPayment: async function (userId, orderId) {
-            return request({
-                uri: endpoints.payment + prefixes.payment +  `/cancelPayment/${userId}/${orderId}`,
-                method: 'POST'
-            });
-        },
-        getStatus: async function (id) {
-            return request({
-                uri: endpoints.payment + prefixes.payment + `/status/${id}`,
-                method: 'GET'
-            });
-        }
-    }
+    });
+}
 
-};
+let sqlEndpoints = new Endpoints('sql'), redisEndpoints = new Endpoints('redis');
 
-module.exports = handlers;
+module.exports = {sqlEndpoints, redisEndpoints};
+
+if (require.main === module) {
+    // noinspection JSIgnoredPromiseFromCall
+    main();
+}
+
+async function main() {
+    let handlers = redisEndpoints;
+    let result;
+    /**
+     *
+     * @type {CreateUserResponse}
+     */
+    let {userId} = await handlers.users.createUser("mihai");
+    console.log(require('util').inspect(userId, {depth: null, colors: true}));
+
+    result = await handlers.users.addFunds(userId, 50);
+    console.log(require('util').inspect(result, {depth: null, colors: true}));
+
+    result = await handlers.users.subtract(userId, 50);
+    console.log(require('util').inspect(result, {depth: null, colors: true}));
+
+    result = await handlers.users.info(userId);
+    console.log(require('util').inspect(result, {depth: null, colors: true}));
+}

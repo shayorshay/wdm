@@ -2,33 +2,33 @@
 
 const express = require('express');
 const app = express();
-const {sqlClient} = require("../data");
+const {sqlClient} = require('../data');
 
 
-app.post("/create/", async function (req, res, next) {
+app.post('/create/', async function (req, res, next) {
     /**
      * @type {User}
      */
     const body = req.body;
 
     // language=PostgreSQL
-    sqlClient.query("INSERT into wdm.client(name) VALUES ($1) RETURNING id", [body.name],
+    sqlClient.query('INSERT into wdm.client(name) VALUES ($1) RETURNING "userId"', [body.name],
         function (err, result) {
             if (err)
                 return next(err);
 
-            res.send({id: result.rows[0].id});
+            res.send({userId: result.rows[0].userId});
         });
 });
 
 
-app.delete("/remove/:id", function (req, res, next) {
+app.delete('/remove/:userId', function (req, res, next) {
     /**
      * @type {string}
      */
-    const {id} = req.params;
+    const {userId} = req.params;
 
-    sqlClient.query("DELETE FROM wdm.client WHERE id = $1", [id], function (err) {
+    sqlClient.query('DELETE FROM wdm.client WHERE "userId" = $1', [userId], function (err) {
         if (err)
             return next(err);
 
@@ -37,16 +37,13 @@ app.delete("/remove/:id", function (req, res, next) {
 });
 
 
-app.get("/find/", function (req, res, next) {
+app.get('/find/:userId', function (req, res, next) {
     /**
      * @type {string[]}
      */
-    let ids = req.query.ids;
+    let {userId} = req.query;
 
-    if (!Array.isArray(ids))
-        ids = [ids];
-
-    sqlClient.query("SELECT * FROM wdm.client WHERE id = ANY($1::int[]);", [ids], function (err, result) {
+    sqlClient.query('SELECT * FROM wdm.client WHERE "userId" = ANY($1);', [userId], function (err, result) {
         if (err)
             return next(err);
 
@@ -57,13 +54,13 @@ app.get("/find/", function (req, res, next) {
     });
 });
 
-app.get("/credit/:id", function (req, res, next) {
+app.get('/credit/:userId', function (req, res, next) {
     /**
      * @type {string}
      */
-    const {id} = req.params;
+    const {userId} = req.params;
 
-    sqlClient.query("SELECT credit FROM wdm.client WHERE id = $1", [id], function (err, result) {
+    sqlClient.query('SELECT credit FROM wdm.client WHERE "userId" = $1', [userId], function (err, result) {
         if (err)
             return next(err);
 
@@ -71,11 +68,11 @@ app.get("/credit/:id", function (req, res, next) {
             return res.sendStatus(404);
 
 
-        res.send({credit: result.rows[0].credit || "0"});
+        res.send({credit: result.rows[0].credit || '0'});
     });
 });
 
-app.post("/credit/subtract/:user_id/:amount", function (req, res, next) {
+app.post('/credit/subtract/:user_id/:amount', function (req, res, next) {
     /**
      * @type {string}
      */
@@ -83,14 +80,14 @@ app.post("/credit/subtract/:user_id/:amount", function (req, res, next) {
 
 
     // language=PostgreSQL
-    sqlClient.query("UPDATE wdm.client SET credit = credit - $2 WHERE id = $1 AND credit >= $2;", [user_id, amount], function (err, result) {
+    sqlClient.query('UPDATE wdm.client SET credit = credit - $2 WHERE "userId" = $1 AND credit >= $2;', [user_id, amount], function (err, result) {
         if (err)
             return next(err);
 
         if (result.rowCount !== 1) {
             // something is wrong
             // language=PostgreSQL
-            sqlClient.query("SELECT 1 FROM wdm.client WHERE id = $1;", [user_id], function (err, result) {
+            sqlClient.query('SELECT 1 FROM wdm.client WHERE "userId" = $1;', [user_id], function (err, result) {
 
                 if (result.rowCount !== 1)
                 // user not found
@@ -105,14 +102,14 @@ app.post("/credit/subtract/:user_id/:amount", function (req, res, next) {
     });
 });
 
-app.post("/credit/add/:user_id/:amount", function (req, res, next) {
+app.post('/credit/add/:user_id/:amount', function (req, res, next) {
     /**
      * @type {string}
      */
     const {user_id, amount} = req.params;
 
     // language=PostgreSQL
-    sqlClient.query("UPDATE wdm.client SET credit = credit + $2 WHERE id = $1;", [user_id, amount], function (err, result) {
+    sqlClient.query('UPDATE wdm.client SET credit = credit + $2 WHERE "userId" = $1;', [user_id, amount], function (err, result) {
         if (err)
             return next(err);
 

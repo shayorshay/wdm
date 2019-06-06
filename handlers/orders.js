@@ -2,7 +2,7 @@
 
 const express = require('express');
 const app = express();
-const {redisClient, genId, endpoints} = require("../data");
+const {redisClient, genId, redisEndpoints} = require("../data");
 
 const cols = {
     payment: "pmt:",
@@ -46,7 +46,7 @@ app.get("/find/:id", function (req, res, next) {
 
         orderItems.user_id = undefined;
 
-        let status = await endpoints.payment.getStatus(id);
+        let status = await redisEndpoints.payment.getStatus(id);
 
         let result = {
             user_id,
@@ -62,7 +62,7 @@ app.get("/find/:id", function (req, res, next) {
 app.post("/additem/:orderId/:itemId", async function (req, res, next) {
     const {orderId, itemId} = req.params;
 
-    let status = await endpoints.payment.getStatus(orderId);
+    let status = await redisEndpoints.payment.getStatus(orderId);
     if(status == "FINISHED")
         res.sendStatus(403);
     else{
@@ -82,7 +82,7 @@ app.post("/removeitem/:orderId/:itemId", function (req, res, next) {
 
     const {orderId, itemId} = req.params;
 
-    let status = await endpoints.payment.getStatus(orderId);
+    let status = await redisEndpoints.payment.getStatus(orderId);
     if(status == "FINISHED")
         res.sendStatus(403);
     else{
@@ -116,7 +116,7 @@ app.post("/checkout/:orderId", async function (req, res, next) {
 
     // check status
     try {
-        order_status = await endpoints.payment.getStatus(orderId);
+        order_status = await redisEndpoints.payment.getStatus(orderId);
     } catch (e) {
         return next(e);
     }
@@ -127,7 +127,7 @@ app.post("/checkout/:orderId", async function (req, res, next) {
     if (order_status === "PAID") {
         
         try {
-            await endpoints.stock.subtractOrder(orderId);
+            await redisEndpoints.stock.subtractOrder(orderId);
         } catch (e) {
             return next(e);
         }
@@ -139,10 +139,10 @@ app.post("/checkout/:orderId", async function (req, res, next) {
         
 
         try {
-            await endpoints.stock.subtractOrder(orderId);
+            await redisEndpoints.stock.subtractOrder(orderId);
         } catch (e) {
             try {
-                await endpoints.payment.cancelPayment(userId, orderId);
+                await redisEndpoints.payment.cancelPayment(userId, orderId);
             } catch (e) {
                 return next(e);
             }
@@ -151,7 +151,7 @@ app.post("/checkout/:orderId", async function (req, res, next) {
         }
         try {
             
-            await endpoints.payment.pay(userId, orderId);
+            await redisEndpoints.payment.pay(userId, orderId);
             await set_status();
             res.sendStatus(200);
         } catch (e) {

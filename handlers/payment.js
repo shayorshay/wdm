@@ -2,8 +2,7 @@
 
 const express = require('express');
 const app = express();
-const {redisClient, genId} = require("../data");
-const endpoints = require("../endpoints");
+const {redisClient, genId, redisEndpoints} = require("../data");
 
 const cols = {
     payment: "pmt:",
@@ -22,7 +21,7 @@ app.post("/pay/:userId/:orderId", async function (req, res, next) {
     const {userId, orderId} = req.params;
 
     // Get order from order service
-    const order = endpoints.order.get(orderId).then(order => {
+    const order = redisEndpoints.order.get(orderId).then(order => {
             /**
              *
              * @type {number}
@@ -56,7 +55,7 @@ app.post("/pay/:userId/:orderId", async function (req, res, next) {
                     res.send(err);
 
                 // subtract amount from user account
-                endpoints.subtract(userId, cost).then(
+                redisEndpoints.subtract(userId, cost).then(
                     paymentResult => res.sendStatus(200),
                     paymentError => res.send(paymentError));
 
@@ -80,7 +79,7 @@ app.post("/cancelPayment/:userId/:orderId", function (req, res, next) {
                     return next(err);
 
                 // add funds to user
-                endpoints.addFunds(userId, payment.cost).then(
+                redisEndpoints.addFunds(userId, payment.cost).then(
                     paymentResult => {
                         // everything is cool
                         res.sendStatus(200);

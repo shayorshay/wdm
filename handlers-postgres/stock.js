@@ -2,22 +2,16 @@
 
 const express = require('express');
 const app = express();
-const {sqlClient, genId} = require("../data");
+const {sqlClient, genId} = require('../data');
 
-const colNames = {
-    number: "number",
-    id: "id",
-    price: "price"
-};
-
-app.get("/availability/:id", function (req, res, next) {
+app.get('/availability/:id', function (req, res, next) {
     /**
      * @type {string}
      */
     const {id} = req.params;
 
     // language=PostgreSQL
-    sqlClient.query("SELECT * FROM wdm.item WHERE id = $1", [id], function (err, result) {
+    sqlClient.query('SELECT * FROM wdm.item WHERE "itemId" = $1', [id], function (err, result) {
         if (err)
             return next(err);
 
@@ -28,18 +22,18 @@ app.get("/availability/:id", function (req, res, next) {
     });
 });
 
-app.post("/subtract/:itemId/:number", function (req, res, next) {
+app.post('/subtract/:itemId/:number', function (req, res, next) {
     const {itemId, number} = req.params;
 
 
     // language=PostgreSQL
-    sqlClient.query("UPDATE wdm.item SET stock = stock - $2 WHERE id = $1 AND stock >= $2", [itemId, number], function (err, result) {
+    sqlClient.query('UPDATE wdm.item SET stock = stock - $2 WHERE "itemId" = $1 AND stock >= $2', [itemId, number], function (err, result) {
         if (err)
             return next(err);
 
         if (!result.rowCount) {
             // language=PostgreSQL
-            return sqlClient.query("SELECT 1 FROM wdm.item WHERE id = $1", [itemId], function (err, result) {
+            return sqlClient.query('SELECT 1 FROM wdm.item WHERE "itemId" = $1', [itemId], function (err, result) {
                 if (err)
                     return next(err);
 
@@ -54,11 +48,11 @@ app.post("/subtract/:itemId/:number", function (req, res, next) {
     });
 });
 
-app.post("/add/:itemId/:number", function (req, res, next) {
+app.post('/add/:itemId/:number', function (req, res, next) {
     const {itemId, number} = req.params;
 
     // language=PostgreSQL
-    sqlClient.query("UPDATE wdm.item SET stock = stock + $2 WHERE id = $1", [itemId, number], function (err, result) {
+    sqlClient.query('UPDATE wdm.item SET stock = stock + $2 WHERE "itemId" = $1', [itemId, number], function (err, result) {
         if (err)
             return next(err);
 
@@ -69,10 +63,10 @@ app.post("/add/:itemId/:number", function (req, res, next) {
     });
 });
 
-app.post("/item/create", function (req, res, next) {
+app.post('/item/create', function (req, res, next) {
     const price = Math.floor(Math.random() * 10) + 1;
     // language=PostgreSQL
-    sqlClient.query("INSERT INTO wdm.item(cost, stock) VALUES ($1, $2) RETURNING id", [price, 0], function (err, result) {
+    sqlClient.query('INSERT INTO wdm.item(cost, stock) VALUES ($1, $2) RETURNING "itemId"', [price, 0], function (err, result) {
         if (err)
             return next(err);
 
