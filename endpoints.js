@@ -80,9 +80,9 @@ function Endpoints(base) {
             }
         },
 
-        
 
-        
+
+
         stock: {
 
             getAvailability: async (itemId) => {
@@ -100,50 +100,25 @@ function Endpoints(base) {
                 });
             },
 
-            subtractOrder: async function (orderId) {
-                let {orderItems} = await handlers.order.get(orderId);
+            subtractOrder: async (orderId) => {
+                let {orderItems} = await this.endpoints.order.get(orderId);
                 let keys = Object.keys(orderItems);
-    
+
                 for (let i = 0; i < keys.length; i++) {
                     let item = keys[i];
                     try {
-                        handlers.stock.subtract(item, parseInt(orderItems[item]));
-                        
+                        this.endpoints.stock.subtract(item, orderItems[item]);
+
                     } catch (e) {
-                        while (i >= 0) {
+                        while (--i >= 0) {
                             let item = keys[i];
-    
-                            handlers.stock.add(item, parseInt(orderItems[item]));
-                            i--;
+
+                            this.endpoints.stock.add(item, orderItems[item]);
                         }
-    
+
                         throw e;
                     }
-    
-                }
-            },
-    
-            subtractOrder_sql: async function (orderId) {
-                let {orderItems} = await handlers.order.get(orderId);
-                let keys = Object.keys(orderItems);
-    
-                for (let i = 0; i < keys.length; i++) {
-                    let item = keys[i];
-                    console.log(orderItems[item].item_id,orderItems[item].quantity);
-                    try {
-                        handlers.stock.subtract(orderItems[item].item_id, orderItems[item].quantity);
-                        
-                    } catch (e) {
-                        while (i >= 0) {
-                            let item = keys[i];
-    
-                            handlers.stock.add(orderItems[item].item_id, orderItems[item].quantity);
-                            i--;
-                        }
-    
-                        throw e;
-                    }
-    
+
                 }
             },
 
