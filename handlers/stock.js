@@ -10,16 +10,16 @@ const colNames = {
     price: "price"
 };
 
-app.get("/availability/:id", function (req, res, next) {
+app.get("/availability/:itemId", function (req, res, next) {
     /**
      * @type {string}
      */
-    const {id} = req.params;
+    const {itemId} = req.params;
 
     /**
      * @type {Stock}
      */
-    redisClient.hgetall(id, function (err, item) {
+    redisClient.hgetall(itemId, function (err, item) {
         if (!item)
             return next(item);
 
@@ -58,16 +58,16 @@ app.post("/add/:itemId/:number", function (req, res, next) {
 });
 
 app.post("/item/create", function (req, res, next) {
-    const id = genId("item");
-    const price = Math.floor(Math.random() * 10) + 1;
+    const itemId = genId("item");
+    const {price} = req.body;
 
-    const newItem = {id, number: 0, price: price};
+    const newItem = {id: itemId, number: 0, price};
 
-    redisClient.hmset(id, newItem, function (err) {
+    redisClient.hmset(itemId, newItem, function (err) {
         if (err)
             return next(err);
 
-        res.json({id});
+        res.json({itemId});
     });
 });
 
@@ -75,7 +75,7 @@ module.exports = app;
 
 /**
  * @class Stock
- * @property {string} id
+ * @property {string} itemId
  * @property {int} number
  * @property {int} price
  */

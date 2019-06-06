@@ -4,14 +4,14 @@ const express = require('express');
 const app = express();
 const {sqlClient, genId} = require('../data');
 
-app.get('/availability/:id', function (req, res, next) {
+app.get('/availability/:itemId', function (req, res, next) {
     /**
      * @type {string}
      */
-    const {id} = req.params;
+    const {itemId} = req.params;
 
     // language=PostgreSQL
-    sqlClient.query('SELECT * FROM wdm.item WHERE "itemId" = $1', [id], function (err, result) {
+    sqlClient.query('SELECT * FROM wdm.item WHERE "itemId" = $1', [itemId], function (err, result) {
         if (err)
             return next(err);
 
@@ -64,13 +64,13 @@ app.post('/add/:itemId/:number', function (req, res, next) {
 });
 
 app.post('/item/create', function (req, res, next) {
-    const price = Math.floor(Math.random() * 10) + 1;
+    const {price} = req.body;
     // language=PostgreSQL
-    sqlClient.query('INSERT INTO wdm.item(cost, stock) VALUES ($1, $2) RETURNING "itemId"', [price, 0], function (err, result) {
+    sqlClient.query('INSERT INTO wdm.item(price, stock) VALUES ($1, $2) RETURNING "itemId"', [price, 0], function (err, result) {
         if (err)
             return next(err);
 
-        const newItem = {id: result.rows[0].id, number: 0, price};
+        const newItem = {itemId: result.rows[0].itemId, number: 0, price};
 
         res.send(newItem);
     });

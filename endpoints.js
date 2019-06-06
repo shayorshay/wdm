@@ -82,9 +82,10 @@ function Endpoints(base) {
 
         stock: {
 
-            getAvailability: async (id) => {
+            getAvailability: async (itemId) => {
                 return request({
-                    uri: this.endpoints.stock + `/availability/${id}`,
+                    uri: this.endpoints.stock + `/availability/${itemId}`,
+                    json: true,
                     method: 'GET'
                 });
             },
@@ -121,12 +122,15 @@ function Endpoints(base) {
             add: async (id, amount) => {
                 return request({
                     uri: this.endpoints.stock + `/add/${id}/${amount}`,
-                    method: 'POST'
+                    method: 'POST',
+                    json: true
                 });
             },
-            create: async () => {
+            create: async (price) => {
                 return request({
                     uri: this.endpoints.stock + '/item/create',
+                    body: {price},
+                    json: true, // Automatically parses the JSON string in the response
                     method: 'POST'
                 });
             },
@@ -176,6 +180,14 @@ if (require.main === module) {
 }
 
 async function main() {
+    let assert = require("assert");
+
+    function assertObj(tr, received) {
+        for (let k in tr) {
+            assert.equal(tr[k], received[k]);
+        }
+    }
+
     let handlers = redisEndpoints;
     let result;
     /**
@@ -186,11 +198,40 @@ async function main() {
     console.log(require('util').inspect(userId, {depth: null, colors: true}));
 
     result = await handlers.users.addFunds(userId, 50);
-    console.log(require('util').inspect(result, {depth: null, colors: true}));
+    assert.strictEqual(result, "OK");
 
-    result = await handlers.users.subtract(userId, 50);
-    console.log(require('util').inspect(result, {depth: null, colors: true}));
+    result = await handlers.users.subtract(userId, 49);
+    assert.strictEqual(result, "OK");
 
     result = await handlers.users.info(userId);
+    assert.equal(result.credit, 1);
+    assertObj({name: "mihai"}, result);
+
+    result = await handlers.users.addFunds(userId, 50);
+    assert.strictEqual(result, "OK");
+
+    let {itemId} = await handlers.stock.create(10);
+    console.log(require('util').inspect(itemId, {depth: null, colors: true}));
+
+    let {count} = await handlers.stock.add(itemId, 30);
+    console.log(require('util').inspect(count, {depth: null, colors: true}));
+
+    assert.deepStrictEqual(count, 30);
+
+    result = await handlers.stock.getAvailability(itemId);
+    assertObj({
+        number: '30',
+        price: '10'
+    }, result);
+
+
+    result = await handlers.stock.subtract(itemId, 10);
     console.log(require('util').inspect(result, {depth: null, colors: true}));
+
+    result = await handlers.stock.getAvailability(itemId);
+    assertObj({
+        number: '20',
+        price: '10'
+    }, result);
+
 }

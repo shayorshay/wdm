@@ -15,7 +15,7 @@ CREATE TABLE item
 (
     "itemId" SERIAL primary key,
     name     VARCHAR(50),
-    cost     FLOAT   NOT NULL,
+    price     FLOAT   NOT NULL,
     stock    INTEGER NOT NULL
 
 );
