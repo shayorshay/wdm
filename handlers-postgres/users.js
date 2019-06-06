@@ -37,16 +37,13 @@ app.delete('/remove/:userId', function (req, res, next) {
 });
 
 
-app.get('/find/', function (req, res, next) {
+app.get('/find/:userId', function (req, res, next) {
     /**
      * @type {string[]}
      */
-    let userIds = req.query.userIds;
+    let {userId} = req.query;
 
-    if (!Array.isArray(userIds))
-        userIds = [userIds];
-
-    sqlClient.query('SELECT * FROM wdm.client WHERE "userId" = ANY($1::int[]);', [userIds], function (err, result) {
+    sqlClient.query('SELECT * FROM wdm.client WHERE "userId" = ANY($1);', [userId], function (err, result) {
         if (err)
             return next(err);
 

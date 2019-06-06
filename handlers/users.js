@@ -37,17 +37,17 @@ app.delete("/remove/:userId", function (req, res, next) {
 });
 
 
-app.get("/find/", function (req, res, next) {
+app.get("/find/:userId", function (req, res, next) {
     /**
      * @type {string}
      */
-    const userIds = req.query.userIds;
+    const {userId} = req.params;
 
-    getAllIds(userIds, function (err, objects) {
+    redisClient.hgetall(userId, function (err, result) {
         if (err)
             return next(err);
 
-        res.send(objects.filter(e => e !== null));
+        res.send(result);
     });
 });
 
