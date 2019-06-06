@@ -5,7 +5,7 @@ const app = express();
 const {redisClient, getAllIds, config, genId} = require("../data");
 
 const colNames = {
-    number: "number",
+    stock: "stock",
     id: "id",
     price: "price"
 };
@@ -27,15 +27,15 @@ app.get("/availability/:itemId", function (req, res, next) {
     });
 });
 
-app.post("/subtract/:itemId/:number", function (req, res, next) {
-    const {itemId, number} = req.params;
+app.post("/subtract/:itemId/:stock", function (req, res, next) {
+    const {itemId, stock} = req.params;
 
-    redisClient.hincrby(itemId, colNames.number, -number, function (err, newNumber) {
+    redisClient.hincrby(itemId, colNames.stock, -stock, function (err, newNumber) {
         if (err)
             return next(err);
 
         if (newNumber < 0)
-            return redisClient.hincrby(itemId, colNames.number, number, function (err) {
+            return redisClient.hincrby(itemId, colNames.stock, stock, function (err) {
                 if (err)
                     return next(err);
 
@@ -46,14 +46,14 @@ app.post("/subtract/:itemId/:number", function (req, res, next) {
     });
 });
 
-app.post("/add/:itemId/:number", function (req, res, next) {
-    const {itemId, number} = req.params;
+app.post("/add/:itemId/:stock", function (req, res, next) {
+    const {itemId, stock} = req.params;
 
-    redisClient.hincrby(itemId, colNames.number, number, (err, count) => {
+    redisClient.hincrby(itemId, colNames.stock, stock, (err) => {
         if (err)
             return next(err);
 
-        res.json({count});
+        res.sendStatus(200);
     })
 });
 
@@ -61,7 +61,7 @@ app.post("/item/create", function (req, res, next) {
     const itemId = genId("item");
     const {price} = req.body;
 
-    const newItem = {id: itemId, number: 0, price};
+    const newItem = {id: itemId, stock: 0, price};
 
     redisClient.hmset(itemId, newItem, function (err) {
         if (err)
@@ -76,6 +76,6 @@ module.exports = app;
 /**
  * @class Stock
  * @property {string} itemId
- * @property {int} number
+ * @property {int} stock
  * @property {int} price
  */

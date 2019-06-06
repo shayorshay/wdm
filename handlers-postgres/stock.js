@@ -22,12 +22,12 @@ app.get('/availability/:itemId', function (req, res, next) {
     });
 });
 
-app.post('/subtract/:itemId/:number', function (req, res, next) {
-    const {itemId, number} = req.params;
+app.post('/subtract/:itemId/:stock', function (req, res, next) {
+    const {itemId, stock} = req.params;
 
 
     // language=PostgreSQL
-    sqlClient.query('UPDATE wdm.item SET stock = stock - $2 WHERE "itemId" = $1 AND stock >= $2', [itemId, number], function (err, result) {
+    sqlClient.query('UPDATE wdm.item SET stock = stock - $2 WHERE "itemId" = $1 AND stock >= $2', [itemId, stock], function (err, result) {
         if (err)
             return next(err);
 
@@ -48,11 +48,11 @@ app.post('/subtract/:itemId/:number', function (req, res, next) {
     });
 });
 
-app.post('/add/:itemId/:number', function (req, res, next) {
-    const {itemId, number} = req.params;
+app.post('/add/:itemId/:stock', function (req, res, next) {
+    const {itemId, stock} = req.params;
 
     // language=PostgreSQL
-    sqlClient.query('UPDATE wdm.item SET stock = stock + $2 WHERE "itemId" = $1', [itemId, number], function (err, result) {
+    sqlClient.query('UPDATE wdm.item SET stock = stock + $2 WHERE "itemId" = $1', [itemId, stock], function (err, result) {
         if (err)
             return next(err);
 
@@ -70,7 +70,7 @@ app.post('/item/create', function (req, res, next) {
         if (err)
             return next(err);
 
-        const newItem = {itemId: result.rows[0].itemId, number: 0, price};
+        const newItem = {itemId: result.rows[0].itemId, stock: 0, price};
 
         res.send(newItem);
     });
@@ -81,6 +81,6 @@ module.exports = app;
 /**
  * @class Stock
  * @property {string} id
- * @property {int} number
+ * @property {int} stock
  * @property {int} price
  */

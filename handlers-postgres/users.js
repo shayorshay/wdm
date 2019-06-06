@@ -41,9 +41,9 @@ app.get('/find/:userId', function (req, res, next) {
     /**
      * @type {string[]}
      */
-    let {userId} = req.query;
+    let {userId} = req.params;
 
-    sqlClient.query('SELECT * FROM wdm.client WHERE "userId" = ANY($1);', [userId], function (err, result) {
+    sqlClient.query('SELECT * FROM wdm.client WHERE "userId" = $1;', [userId], function (err, result) {
         if (err)
             return next(err);
 

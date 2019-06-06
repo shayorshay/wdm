@@ -180,6 +180,14 @@ if (require.main === module) {
 }
 
 async function main() {
+    console.log("Beginning tests");
+    await testEndpoint(redisEndpoints);
+    console.log("Redis DONE");
+    await testEndpoint(sqlEndpoints);
+    console.log("SQL DONE");
+}
+
+async function testEndpoint(handlers) {
     let assert = require("assert");
 
     function assertObj(tr, received) {
@@ -188,7 +196,6 @@ async function main() {
         }
     }
 
-    let handlers = redisEndpoints;
     let result;
     /**
      *
@@ -213,14 +220,12 @@ async function main() {
     let {itemId} = await handlers.stock.create(10);
     console.log(require('util').inspect(itemId, {depth: null, colors: true}));
 
-    let {count} = await handlers.stock.add(itemId, 30);
-    console.log(require('util').inspect(count, {depth: null, colors: true}));
-
-    assert.deepStrictEqual(count, 30);
+    result = await handlers.stock.add(itemId, 30);
+    assert.strictEqual(result, "OK");
 
     result = await handlers.stock.getAvailability(itemId);
     assertObj({
-        number: '30',
+        stock: '30',
         price: '10'
     }, result);
 
@@ -230,8 +235,16 @@ async function main() {
 
     result = await handlers.stock.getAvailability(itemId);
     assertObj({
-        number: '20',
+        stock: '20',
         price: '10'
     }, result);
+
+    // todo
+    // result = await handlers.stock.subtractOrder(itemId);
+    // assertObj({
+    //     number: '20',
+    //     price: '10'
+    // }, result);
+
 
 }
