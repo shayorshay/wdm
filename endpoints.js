@@ -295,36 +295,17 @@ async function testEndpoint(handlers) {
         price: '10'
     }, result);
 
-    let {orderId} = await handlers.orders.create(userId);
+    {
+        let {orderId} = await createAndPopulateOrder();
 
-    result = await handlers.orders.addItem(orderId, itemId);
-    assert.strictEqual(result, "OK");
+        result = await handlers.orders.remove(orderId);
+        assert.strictEqual(result, "OK");
 
-    let orderItems = {};
-    orderItems[itemId] = 1;
+        await assertWrongStatus(handlers.orders.get(orderId), 404);
+    }
 
-    let order = {orderItems, status: ''};
-    result = await handlers.orders.get(orderId);
-    assertObj(order, result);
+    let {orderId} = createAndPopulateOrder();
 
-    result = await handlers.orders.addItem(orderId, itemId);
-    assert.strictEqual(result, "OK");
-
-    result = await handlers.orders.get(orderId);
-    orderItems[itemId] = 2;
-    assertObj(order, result);
-
-    result = await handlers.orders.removeItem(orderId, itemId);
-    assert.strictEqual(result, "OK");
-
-    result = await handlers.orders.get(orderId);
-    orderItems[itemId] = 1;
-    assertObj(order, result);
-
-    result = await handlers.orders.remove(orderId);
-    assert.strictEqual(result, "OK");
-
-    await assertWrongStatus(handlers.orders.get(orderId), 404);
 
     // todo
     // result = await handlers.stock.subtractOrder(itemId);
@@ -333,5 +314,33 @@ async function testEndpoint(handlers) {
     //     price: '10'
     // }, result);
 
+    async function createAndPopulateOrder() {
+        let {orderId} = await handlers.orders.create(userId);
+
+        result = await handlers.orders.addItem(orderId, itemId);
+        assert.strictEqual(result, "OK");
+
+        let orderItems = {};
+        orderItems[itemId] = 1;
+        let order = {orderItems, status: ''};
+        result = await handlers.orders.get(orderId);
+        assertObj(order, result);
+
+        result = await handlers.orders.addItem(orderId, itemId);
+        assert.strictEqual(result, "OK");
+
+        result = await handlers.orders.get(orderId);
+        orderItems[itemId] = 2;
+        assertObj(order, result);
+
+        result = await handlers.orders.removeItem(orderId, itemId);
+        assert.strictEqual(result, "OK");
+
+        result = await handlers.orders.get(orderId);
+        orderItems[itemId] = 1;
+        assertObj(order, result);
+
+        return {orderId}
+    }
 
 }
