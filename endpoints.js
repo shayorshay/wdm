@@ -81,8 +81,6 @@ function Endpoints(base) {
         },
 
 
-
-
         stock: {
 
             getAvailability: async (itemId) => {
@@ -101,7 +99,7 @@ function Endpoints(base) {
             },
 
             subtractOrder: async (orderId) => {
-                let {orderItems} = await this.endpoints.order.get(orderId);
+                let {orderItems} = await this.endpoints.orders.get(orderId);
                 let keys = Object.keys(orderItems);
 
                 for (let i = 0; i < keys.length; i++) {
@@ -139,14 +137,50 @@ function Endpoints(base) {
             },
         },
 
-        order: {
-            get: async (id) => {
+        orders: {
+            get: async (orderId) => {
                 return request({
-                    uri: this.endpoints.orders + `/find/${id}`,
+                    uri: this.endpoints.orders + `/find/${orderId}`,
                     method: 'GET',
                     json: true
                 });
-            }
+            },
+
+            create: async (userId) => {
+                return request({
+                    uri: this.endpoints.orders + `/create/${userId}`,
+                    method: 'POST',
+                    json: true
+                });
+            },
+
+            remove: async (orderId) => {
+                return request({
+                    uri: this.endpoints.orders + `/remove/${orderId}`,
+                    method: 'DELETE'
+                });
+            },
+
+            addItem: async (orderId, itemId) => {
+                return request({
+                    uri: this.endpoints.orders + `/addItem/${orderId}/${itemId}`,
+                    method: 'POST'
+                });
+            },
+
+            removeItem: async (orderId, itemId) => {
+                return request({
+                    uri: this.endpoints.orders + `/removeItem/${orderId}/${itemId}`,
+                    method: 'DELETE'
+                });
+            },
+
+            checkout: async (orderId) => {
+                return request({
+                    uri: this.endpoints.orders + `/checkout/${orderId}`,
+                    method: 'POST'
+                });
+            },
         },
 
         payment: {
@@ -190,13 +224,32 @@ async function main() {
     console.log("SQL DONE");
 }
 
+/**
+ *
+ * @param {Endpoints} handlers
+ * @return {Promise<void>}
+ */
 async function testEndpoint(handlers) {
     let assert = require("assert");
 
     function assertObj(tr, received) {
         for (let k in tr) {
-            assert.equal(tr[k], received[k]);
+            if (typeof tr[k] === "object")
+                assertObj(tr[k], received[k]);
+            else
+                assert.equal(tr[k], received[k]);
         }
+    }
+
+    async function assertWrongStatus(promise, code) {
+        try {
+            await promise;
+        } catch (e) {
+            assert.strictEqual(e.statusCode, code);
+            return;
+        }
+
+        throw new Error("Call succeeded");
     }
 
     let result;
@@ -241,6 +294,37 @@ async function testEndpoint(handlers) {
         stock: '20',
         price: '10'
     }, result);
+
+    let {orderId} = await handlers.orders.create(userId);
+
+    result = await handlers.orders.addItem(orderId, itemId);
+    assert.strictEqual(result, "OK");
+
+    let orderItems = {};
+    orderItems[itemId] = 1;
+
+    let order = {orderItems, status: ''};
+    result = await handlers.orders.get(orderId);
+    assertObj(order, result);
+
+    result = await handlers.orders.addItem(orderId, itemId);
+    assert.strictEqual(result, "OK");
+
+    result = await handlers.orders.get(orderId);
+    orderItems[itemId] = 2;
+    assertObj(order, result);
+
+    result = await handlers.orders.removeItem(orderId, itemId);
+    assert.strictEqual(result, "OK");
+
+    result = await handlers.orders.get(orderId);
+    orderItems[itemId] = 1;
+    assertObj(order, result);
+
+    result = await handlers.orders.remove(orderId);
+    assert.strictEqual(result, "OK");
+
+    await assertWrongStatus(handlers.orders.get(orderId), 404);
 
     // todo
     // result = await handlers.stock.subtractOrder(itemId);

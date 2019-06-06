@@ -34,7 +34,7 @@ CREATE TABLE order_item
     "orderId" INTEGER REFERENCES "order" ("orderId"),
     "itemId"  INTEGER,
     quantity  INTEGER NOT NULL,
-    cost      FLOAT DEFAULT 1
+    UNIQUE ("orderId", "itemId")
 
 );
 

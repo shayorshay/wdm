@@ -8,14 +8,13 @@ const cols = {
     payment: "pmt:",
     status: "status"
 };
-app.post("/create/:user_id", async function (req, res, next) {
-
-    const {user_id} = req.params;
+app.post("/create/:userId", async function (req, res, next) {
+    const {userId} = req.params;
 
     const orderId = genId("ord");
 
     // create empty orderItems key
-    redisClient.hset(orderId, "user_id", user_id, (err) => {
+    redisClient.hset(orderId, "userId", userId, (err) => {
         if (err)
             return next(err);
 
@@ -42,14 +41,17 @@ app.get("/find/:id", function (req, res, next) {
         if (err)
             return next(err);
 
-        const {user_id} = orderItems;
+        if (!orderItems)
+            return res.sendStatus(404);
 
-        orderItems.user_id = undefined;
+        const {userId} = orderItems;
+
+        orderItems.userId = undefined;
 
         let status = await redisEndpoints.payment.getStatus(id);
 
         let result = {
-            user_id,
+            userId,
             orderItems,
             status
         };
@@ -59,7 +61,7 @@ app.get("/find/:id", function (req, res, next) {
 });
 
 
-app.post("/additem/:orderId/:itemId", async function (req, res, next) {
+app.post("/addItem/:orderId/:itemId", async function (req, res, next) {
     const {orderId, itemId} = req.params;
 
     let status = await redisEndpoints.payment.getStatus(orderId);
@@ -74,16 +76,16 @@ app.post("/additem/:orderId/:itemId", async function (req, res, next) {
         })
     }
     // add item to orderItems (hincrby will create a hashkey even if it is not created yet.
-    
+
 });
 
 
-app.post("/removeitem/:orderId/:itemId", function (req, res, next) {
+app.delete("/removeItem/:orderId/:itemId", async function (req, res, next) {
 
     const {orderId, itemId} = req.params;
 
     let status = await redisEndpoints.payment.getStatus(orderId);
-    if(status == "FINISHED")
+    if(status === "FINISHED")
         res.sendStatus(403);
     else{
     // subtract item to orderItems (hincrby will create a hashkey even if it is not created yet.
@@ -120,12 +122,12 @@ app.post("/checkout/:orderId", async function (req, res, next) {
     } catch (e) {
         return next(e);
     }
-    
+
     if (order_status === "FINISHED" || order_status === "CANCELED")
         return res.sendStatus(403);
 
     if (order_status === "PAID") {
-        
+
         try {
             await redisEndpoints.stock.subtractOrder(orderId);
         } catch (e) {
@@ -134,9 +136,9 @@ app.post("/checkout/:orderId", async function (req, res, next) {
         return res.sendStatus(200);
     }
     else{
-    redisClient.hget(orderId, "user_id", async function (err, userId) {
+    redisClient.hget(orderId, "userId", async function (err, userId) {
         //calling payment function
-        
+
 
         try {
             await redisEndpoints.stock.subtractOrder(orderId);
@@ -150,7 +152,7 @@ app.post("/checkout/:orderId", async function (req, res, next) {
             res.sendStatus(403);
         }
         try {
-            
+
             await redisEndpoints.payment.pay(userId, orderId);
             await set_status();
             res.sendStatus(200);
@@ -161,8 +163,8 @@ app.post("/checkout/:orderId", async function (req, res, next) {
 }
 
     async function set_status() {
-        
-        
+
+
         // set payment status
         redisClient.hset(cols.payment + orderId, cols.status, "FINISHED", (err, res) => {
             // reached no return point, too bad
