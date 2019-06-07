@@ -61,36 +61,23 @@ app.post("/pay/:userId/:orderId", async function (req, res, next) {
 
 app.post("/cancelPayment/:userId/:orderId", function (req, res, next) {
     const {userId, orderId} = req.params;
+    // cancel the payment
+    redisClient.del(cols.payment + orderId, async (err, ammount) => {
+            if (err)
+                return next(new Error(err.message));
 
-    redisClient.hgetall(cols.payment, function (err, payment) {
-        if (err)
-            return next(new Error(err.message));
+            if (!ammount)
+                return res.status(403);
 
-        // cancel the payment
-        redisClient.hset(cols.payment + orderId, cols.status, "CANCELLED", (err, res) => {
-                if (err)
-                    return next(new Error(err.message));
-
-                // add funds to user
-                redisEndpoints.addFunds(userId, payment.cost).then(
-                    paymentResult => {
-                        // everything is cool
-                        res.sendStatus(200);
-                    },
-                    paymentError => {
-                        redisClient.hset(cols.payment + orderId, cols.status, "PAID", (err, res) => {
-                            // reached no return point, too bad
-                            if (err)
-                                return next(new Error(err.message));
-                        });
-                    });
-
-                //rollback payment to initial state
-                res.send(paymentError)
+            try {
+                await redisEndpoints.users.addFunds(userId, ammount);
+            } catch (e) {
+                return next(new ErrorWithCause(err));
             }
-        );
 
-    });
+            res.send();
+        }
+    );
 });
 
 

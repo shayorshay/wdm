@@ -1,0 +1,64 @@
+#version: "3"
+#
+#services:
+#  myapp:
+#    container_name: myapp
+#    restart: always
+#    build: .
+#    ports:
+#      - '4300:4300'
+#      - '4301:4301'
+#    links:
+#      - redis_db
+#      - mongo
+#  mongo:
+#    container_name: myapp-mongo
+#    image: 'mongo:4'
+#  redis_db:
+#    container_name: myapp-redis
+#    image: 'redis'
+
+
+version: "3"
+services:
+  web:
+    # replace username/repo:tag with your name and image details
+    image: mihai1voicescu/wdm:basic
+    deploy:
+      replicas: 5
+      restart_policy:
+        condition: on-failure
+      resources:
+        limits:
+          cpus: "0.1"
+          memory: 50M
+    ports:
+      - "8000:8000"
+    networks:
+      - webnet
+
+  postgres:
+    image: postgres
+    restart: always
+    ports:
+      - "5432:5432"
+    networks:
+      - webnet
+    environment:
+      POSTGRES_PASSWORD: password
+      POSTGRES_USER: user
+
+  redis:
+    image: redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - "/tmp/data:/data"
+    deploy:
+      placement:
+        constraints: [node.role == manager]
+    command: redis-server --appendonly yes
+    networks:
+      - webnet
+networks:
+  webnet:
