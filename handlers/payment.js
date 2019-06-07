@@ -15,6 +15,7 @@ app.get("/", function (req, res) {
 });
 
 app.post("/pay/:userId/:orderId", async function (req, res, next) {
+    let responses;
     let order;
     /**
      * @type {string}
@@ -25,15 +26,19 @@ app.post("/pay/:userId/:orderId", async function (req, res, next) {
     try {
         order = await redisEndpoints.orders.get(orderId);
     } catch (e) {
-        return next(e);
+        return next(new ErrorWithCause("Encountered an error.", e));
     }
 
     let requests = [];
     for (let itemId in order.orderItems) {
-       requests.push(redisEndpoints.stock.getAvailability(itemId));
+        requests.push(redisEndpoints.stock.getAvailability(itemId));
     }
 
-    let responses = await Promise.all(requests);
+    try {
+        responses = await Promise.all(requests);
+    } catch (e) {
+        return next(new ErrorWithCause("Encountered an error.", e));
+    }
 
     let sum = 0;
     for (let response of responses) {
@@ -43,12 +48,12 @@ app.post("/pay/:userId/:orderId", async function (req, res, next) {
     try {
         await redisEndpoints.users.subtract(userId, sum);
     } catch (e) {
-        return next(e);
+        return next(new ErrorWithCause("Encountered an error.", e));
     }
 
     redisClient.set(cols.payment + orderId, sum, (err) => {
         if (err)
-            return next(err);
+            return next(new ErrorWithCause("Encountered an error.", err));
 
         res.sendStatus(200);
     });
@@ -97,7 +102,7 @@ app.get("/status/:orderId", function (req, res, next) {
 
     redisClient.get(cols.payment + orderId, (err, cost) => {
         if (err)
-            return next(err);
+            return next(new ErrorWithCause("Encountered an error.", err));
 
         if (cost)
             res.send("PAYED");

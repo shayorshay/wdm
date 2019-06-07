@@ -44,5 +44,6 @@ CREATE TABLE payment
     "paymentId" SERIAL primary key,
     cost        FLOAT NOT NULL,
     "orderId"   INTEGER,
-    "userId"    INTEGER
+    "userId"    INTEGER,
+    UNIQUE ("orderId", "userId")
 );

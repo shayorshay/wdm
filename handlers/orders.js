@@ -17,7 +17,7 @@ app.post("/create/:userId", async function (req, res, next) {
     // create empty orderItems key
     redisClient.hset(orderId, "userId", userId, (err) => {
         if (err)
-            return next(err);
+            return next(new ErrorWithCause("Encountered an error.", err));
 
         res.send({orderId});
     });
@@ -29,7 +29,7 @@ app.delete("/remove/:id", function (req, res, next) {
 
     redisClient.del(id, function (err) {    //hdel does not remove the key as intended
         if (err)
-            return next(err);
+            return next(new ErrorWithCause("Encountered an error.", err));
 
         res.sendStatus(200);
     });
@@ -38,16 +38,23 @@ app.delete("/remove/:id", function (req, res, next) {
 app.get("/find/:orderId", function (req, res, next) {
     const {orderId} = req.params;
 
-    redisClient.hgetall(orderId, async function (err, orderItems) {
+    redisClient.hgetall(orderId, async function (err, response) {
         if (err)
-            return next(err);
+            return next(new ErrorWithCause("Encountered an error.", err));
 
-        if (!orderItems)
+        if (!response)
             return res.sendStatus(404);
 
-        const {userId} = orderItems;
+        const {userId} = response;
 
-        orderItems.userId = undefined;
+        let orderItems = {};
+
+        response.userId = undefined;
+
+        for (let k in response) {
+            if (response[k])
+                orderItems[k] = +response[k];
+        }
 
         let status = await redisEndpoints.payment.getStatus(orderId);
 
@@ -71,7 +78,7 @@ app.post("/addItem/:orderId/:itemId", async function (req, res, next) {
     else {
         redisClient.hincrby(orderId, itemId, 1, function (err) {
             if (err)
-                return next(err);
+                return next(new ErrorWithCause("Encountered an error.", err));
 
             res.sendStatus(200);
         })
@@ -91,13 +98,13 @@ app.delete("/removeItem/:orderId/:itemId", async function (req, res, next) {
         // subtract item to orderItems (hincrby will create a hashkey even if it is not created yet.
         redisClient.hincrby(orderId, itemId, -1, function (err, result) {
             if (err)
-                return next(err);
+                return next(new ErrorWithCause("Encountered an error.", err));
 
             if (result < 0) {
                 // add item to orderItems (hincrby will create a hashkey even if it is not created yet.
                 redisClient.hincrby(orderId, itemId, 1, function (err) {
                     if (err)
-                        return next(err);
+                        return next(new ErrorWithCause("Encountered an error.", err));
 
                     res.sendStatus(403);
                 });
@@ -120,7 +127,7 @@ app.post("/checkout/:orderId", async function (req, res, next) {
     try {
         order_status = await redisEndpoints.payment.getStatus(orderId);
     } catch (e) {
-        return next(e);
+        return next(new ErrorWithCause("Encountered an error.", e));
     }
 
     if (order_status === "PAYED")
@@ -129,7 +136,7 @@ app.post("/checkout/:orderId", async function (req, res, next) {
 
     redisClient.hgetall(orderId, async function (err, orderItems) {
         if (err)
-            return next(err);
+            return next(new ErrorWithCause("Encountered an error.", err));
 
         let {userId} = orderItems;
         orderItems.userId = undefined;
@@ -137,7 +144,7 @@ app.post("/checkout/:orderId", async function (req, res, next) {
         try {
             await redisEndpoints.payment.pay(userId, orderId);
         } catch (e) {
-            return next(e);
+            return next(new ErrorWithCause("Encountered an error.", e));
         }
 
         try {

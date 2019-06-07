@@ -104,13 +104,15 @@ function Endpoints(base) {
                 for (let i = 0; i < keys.length; i++) {
                     let item = keys[i];
                     try {
-                        this.stock.subtract(item, orderItems[item]);
+                        if (orderItems[item])
+                            await this.stock.subtract(item, orderItems[item]);
 
                     } catch (e) {
                         while (--i >= 0) {
                             let item = keys[i];
 
-                            this.stock.add(item, orderItems[item]);
+                            if (orderItems[item])
+                                await this.stock.add(item, orderItems[item]);
                         }
 
                         throw e;
@@ -236,7 +238,7 @@ async function testEndpoint(handlers) {
             if (typeof tr[k] === "object")
                 assertObj(tr[k], received[k]);
             else
-                assert.equal(tr[k], received[k]);
+                assert.strictEqual(tr[k], received[k]);
         }
     }
 
@@ -266,10 +268,9 @@ async function testEndpoint(handlers) {
     assert.strictEqual(result, "OK");
 
     result = await handlers.users.info(userId);
-    assert.equal(result.credit, 1);
-    assertObj({name: "mihai"}, result);
+    assertObj({name: "mihai", credit: 1}, result);
 
-    result = await handlers.users.addFunds(userId, 50);
+    result = await handlers.users.addFunds(userId, 49);
     assert.strictEqual(result, "OK");
 
     let {itemId} = await handlers.stock.create(10);
@@ -280,8 +281,8 @@ async function testEndpoint(handlers) {
 
     result = await handlers.stock.getAvailability(itemId);
     assertObj({
-        stock: '30',
-        price: '10'
+        stock: 30,
+        price: 10
     }, result);
 
 
@@ -290,8 +291,8 @@ async function testEndpoint(handlers) {
 
     result = await handlers.stock.getAvailability(itemId);
     assertObj({
-        stock: '20',
-        price: '10'
+        stock: 20,
+        price: 10
     }, result);
 
     {
@@ -303,14 +304,82 @@ async function testEndpoint(handlers) {
         await assertWrongStatus(handlers.orders.get(orderId), 404);
     }
 
-    let {orderId} = await createAndPopulateOrder();
+    {
+        let {orderId} = await createAndPopulateOrder();
 
-    result = await handlers.payment.getStatus(orderId);
-    assert.strictEqual(result, "NOT_PAYED");
+        result = await handlers.payment.getStatus(orderId);
+        assert.strictEqual(result, "NOT_PAYED");
+
+        result = await handlers.users.info(userId);
+        assertObj({name: "mihai", credit: 50}, result);
 
 
-    result = await handlers.orders.checkout(orderId);
-    console.log(require('util').inspect(result, {depth: null, colors: true}));
+        result = await handlers.orders.addItem(orderId, itemId);
+        assert.strictEqual(result, "OK");
+
+        result = await handlers.orders.checkout(orderId);
+        console.log(require('util').inspect(result, {depth: null, colors: true}));
+
+        result = await handlers.users.info(userId);
+        assertObj({name: "mihai", credit: 30}, result);
+
+
+        await assertWrongStatus(handlers.orders.checkout(orderId), 403);
+    }
+
+
+    {
+        let {orderId} = await createAndPopulateOrder();
+
+        result = await handlers.payment.getStatus(orderId);
+        assert.strictEqual(result, "NOT_PAYED");
+
+        result = await handlers.users.info(userId);
+        assertObj({name: "mihai", credit: 30}, result);
+
+
+        result = await handlers.orders.addItem(orderId, itemId);
+        assert.strictEqual(result, "OK");
+
+        result = await handlers.orders.addItem(orderId, itemId);
+        assert.strictEqual(result, "OK");
+
+        result = await handlers.orders.addItem(orderId, itemId);
+        assert.strictEqual(result, "OK");
+
+        result = await handlers.orders.addItem(orderId, itemId);
+        assert.strictEqual(result, "OK");
+
+        result = await handlers.orders.addItem(orderId, itemId);
+        assert.strictEqual(result, "OK");
+
+        result = await handlers.orders.addItem(orderId, itemId);
+        assert.strictEqual(result, "OK");
+
+        result = await handlers.orders.addItem(orderId, itemId);
+        assert.strictEqual(result, "OK");
+
+        result = await handlers.orders.addItem(orderId, itemId);
+        assert.strictEqual(result, "OK");
+
+        result = await handlers.orders.addItem(orderId, itemId);
+        assert.strictEqual(result, "OK");
+
+        result = await handlers.orders.addItem(orderId, itemId);
+        assert.strictEqual(result, "OK");
+
+        result = await handlers.orders.addItem(orderId, itemId);
+        assert.strictEqual(result, "OK");
+
+        result = await handlers.orders.addItem(orderId, itemId);
+        assert.strictEqual(result, "OK");
+
+        result = await handlers.orders.get(orderId);
+        console.log(require('util').inspect(result, {depth: null, colors: true}));
+
+
+        await assertWrongStatus(handlers.orders.checkout(orderId), 403);
+    }
 
     async function createAndPopulateOrder() {
         let {orderId} = await handlers.orders.create(userId);

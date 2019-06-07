@@ -15,7 +15,7 @@ app.post("/create/", async function (req, res, next) {
 
     redisClient.hmset(userId, body, function (err) {
         if (err)
-            return next(err);
+            return next(new ErrorWithCause("Encountered an error.", err));
 
         res.send({userId: userId});
     });
@@ -30,7 +30,7 @@ app.delete("/remove/:userId", function (req, res, next) {
 
     redisClient.del(userId, function (err) {
         if (err)
-            return next(err);
+            return next(new ErrorWithCause("Encountered an error.", err));
 
         res.sendStatus(200);
     });
@@ -45,7 +45,10 @@ app.get("/find/:userId", function (req, res, next) {
 
     redisClient.hgetall(userId, function (err, result) {
         if (err)
-            return next(err);
+            return next(new ErrorWithCause("Encountered an error.", err));
+
+        if (result.credit)
+            result.credit = + result.credit;
 
         res.send(result);
     });
@@ -59,7 +62,7 @@ app.get("/credit/:userId", function (req, res, next) {
 
     redisClient.hget(userId, "credit", function (err, credit) {
         if (err)
-            return next(err);
+            return next(new ErrorWithCause("Encountered an error.", err));
 
         res.send({credit});
     });
@@ -73,12 +76,12 @@ app.post("/credit/subtract/:userId/:amount", function (req, res, next) {
 
     redisClient.hincrby(userId, "credit", -amount, function (err, newCredit) {
         if (err)
-            return next(err);
+            return next(new ErrorWithCause("Encountered an error.", err));
 
         if (newCredit < 0)
             return redisClient.hincrby(userId, "credit", amount, function (err) {
                 if (err)
-                    return next(err);
+                    return next(new ErrorWithCause("Encountered an error.", err));
 
                 res.sendStatus(403);
             });
@@ -95,7 +98,7 @@ app.post("/credit/add/:userId/:amount", function (req, res, next) {
 
     redisClient.hincrby(userId, "credit", amount, function (err) {
         if (err)
-            return next(err);
+            return next(new ErrorWithCause("Encountered an error.", err));
 
         res.sendStatus(200);
     });

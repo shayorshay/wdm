@@ -13,7 +13,7 @@ app.post("/create/:userId", function (req, res, next) {
                      VALUES ($1) RETURNING "userId", "orderId"`, [userId],
         function (err, result) {
             if (err)
-                return next(err);
+                return next(new ErrorWithCause("Encountered an error.", err));
 
             res.send({orderId: result.rows[0].orderId});
         });
@@ -30,7 +30,7 @@ app.delete("/remove/:orderId", function (req, res, next) {
                      FROM wdm.order
                      WHERE "orderId" = ${orderId}`, function (err) {
         if (err)
-            return next(err);
+            return next(new ErrorWithCause("Encountered an error.", err));
 
         res.sendStatus(200);
     });
@@ -44,7 +44,7 @@ app.get("/find/:orderId", function (req, res, next) {
                      WHERE "orderId" = $1`, [orderId], async function (err, orderResult) {
         let status;
         if (err)
-            return next(err);
+            return next(new ErrorWithCause("Encountered an error.", err));
 
         if (!orderResult.rows.length)
             return res.sendStatus(404);
@@ -60,7 +60,7 @@ app.get("/find/:orderId", function (req, res, next) {
                          FROM wdm.order_item
                          WHERE "orderId" = $1`, [orderId], function (err, order_item) {
             if (err)
-                return next(err);
+                return next(new ErrorWithCause("Encountered an error.", err));
             if (!order_item.rows.length)
                 return res.sendStatus(404);
 
@@ -95,9 +95,9 @@ app.post("/addItem/:orderId/:itemId", function (req, res, next) {
         // language=PostgreSQL
         sqlClient.query(`INSERT INTO wdm.order_item ("orderId", "itemId", quantity)
                          VALUES ($1, $2, 1)
-                         ON CONFLICT ("orderId", "itemId") DO UPDATE SET quantity = excluded.quantity + 1 `, [orderId, itemId], function (err) {
+                         ON CONFLICT ("orderId", "itemId") DO UPDATE SET quantity = excluded.quantity + wdm.order_item.quantity`, [orderId, itemId], function (err) {
             if (err)
-                return next(err);
+                return next(new ErrorWithCause("Encountered an error.", err));
 
             res.sendStatus(200);
         });
@@ -121,7 +121,7 @@ app.delete("/removeItem/:orderId/:itemId", function (req, res, next) {
                            AND "itemId" = $2
                            AND quantity > 0`, [orderId, itemId], function (err, result) {
             if (err)
-                return next(err);
+                return next(new ErrorWithCause("Encountered an error.", err));
 
             if (result.rowCount !== 1)
                 return res.sendStatus(404);
@@ -140,7 +140,7 @@ app.post("/checkout/:orderId", async function (req, res, next) {
     try {
         order_status = await sqlEndpoints.payment.getStatus(orderId);
     } catch (e) {
-        return next(e);
+        return next(new ErrorWithCause("Encountered an error.", e));
     }
 
     if (order_status === "PAYED")
@@ -150,7 +150,7 @@ app.post("/checkout/:orderId", async function (req, res, next) {
     // language=PostgreSQL
     sqlClient.query(`SELECT * FROM wdm.order_item WHERE "orderId" = ${orderId}; SELECT "userId" FROM wdm."order" where "orderId" = ${orderId};`, async function (err, results) {
         if (err)
-            return next(err);
+            return next(new ErrorWithCause("Encountered an error.", err));
 
         if (!results[1].rows)
             return res.sendStatus(404);
@@ -161,7 +161,7 @@ app.post("/checkout/:orderId", async function (req, res, next) {
         try {
             await sqlEndpoints.payment.pay(userId, orderId);
         } catch (e) {
-            return next(e);
+            return next(new ErrorWithCause("Encountered an error.", e));
         }
 
         let orderItems = {};

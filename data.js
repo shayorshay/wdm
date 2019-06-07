@@ -6,6 +6,30 @@ const redisClient = config.redis ? redis.createClient(config.redis) : null;
 const crypto = require('crypto');
 const {sqlEndpoints, redisEndpoints} = require("./endpoints");
 
+Error.prepareStackTrace = function (error) {
+    let stack = error.stack;
+    if (error.cause) {
+        let c = error.cause;
+        do {
+            stack += "\nCaused by: " + c.stack;
+            c = c.cause;
+        } while (c);
+
+        error.stack = stack;
+    }
+
+    return stack;
+};
+
+class ErrorWithCause extends Error {
+    constructor(message, cause) {
+        super(message);
+        this.cause = cause;
+    }
+}
+
+global.ErrorWithCause = ErrorWithCause;
+
 const {Client} = require('pg');
 let aux = null;
 if (config.sql) {

@@ -20,8 +20,11 @@ app.get("/availability/:itemId", function (req, res, next) {
      * @type {Stock}
      */
     redisClient.hgetall(itemId, function (err, item) {
+        if (err)
+            return next(new ErrorWithCause("Encountered an error.", err));
+
         if (!item)
-            return next(item);
+            return res.sendStatus(404);
 
         item.price = +item.price;
         item.stock = +item.stock;
@@ -35,12 +38,12 @@ app.post("/subtract/:itemId/:stock", function (req, res, next) {
 
     redisClient.hincrby(itemId, colNames.stock, -stock, function (err, newNumber) {
         if (err)
-            return next(err);
+            return next(new ErrorWithCause("Encountered an error.", err));
 
         if (newNumber < 0)
             return redisClient.hincrby(itemId, colNames.stock, stock, function (err) {
                 if (err)
-                    return next(err);
+                    return next(new ErrorWithCause("Encountered an error.", err));
 
                 res.sendStatus(403);
             });
@@ -54,7 +57,7 @@ app.post("/add/:itemId/:stock", function (req, res, next) {
 
     redisClient.hincrby(itemId, colNames.stock, stock, (err) => {
         if (err)
-            return next(err);
+            return next(new ErrorWithCause("Encountered an error.", err));
 
         res.sendStatus(200);
     })
@@ -70,7 +73,7 @@ app.post("/item/create", function (req, res, next) {
 
     redisClient.hmset(itemId, newItem, function (err) {
         if (err)
-            return next(err);
+            return next(new ErrorWithCause("Encountered an error.", err));
 
         res.json({itemId});
     });

@@ -16,7 +16,7 @@ app.post('/pay/:userId/:orderId', async function (req, res, next) {
     try {
         order = await sqlEndpoints.orders.get(orderId);
     } catch (e) {
-        return next(e);
+        return next(new ErrorWithCause("Encountered an error.", e));
     }
 
     let requests = [];
@@ -34,13 +34,16 @@ app.post('/pay/:userId/:orderId', async function (req, res, next) {
     try {
         await sqlEndpoints.users.subtract(userId, sum);
     } catch (e) {
-        return next(e);
+        return next(new ErrorWithCause("Encountered an error.", e));
     }
 
     // language=PostgreSQL
-    sqlClient.query('UPDATE wdm.payment SET cost = $1 WHERE "orderId" = $2', [sum, orderId], function (err, result) {
+    sqlClient.query('INSERT INTO wdm.payment (cost, "orderId", "userId") VALUES ($1, $2, $3) ON CONFLICT("orderId", "userId") DO UPDATE SET cost = excluded.cost WHERE wdm.payment.cost = 0', [sum, orderId, userId], function (err, result) {
         if (err)
-            return next(err);
+            return next(new ErrorWithCause("Encountered an error.", err));
+
+        if (result.rowCount !== 1)
+            return res.send(404);
 
         res.send();
     });
@@ -52,7 +55,7 @@ app.post('/cancelPayment/:userId/:orderId', async function (req, res, next) {
 
     sqlClient.query('SELECT cost FROM wdm.payment WHERE "orderId" = $1 AND status = \'PAID\'', [orderId], function (err, result) {
             if (err)
-                return next(err);
+                return next(new ErrorWithCause("Encountered an error.", err));
 
             if (result.rowCount !== 1) {
                 //something went wrong
@@ -65,7 +68,7 @@ app.post('/cancelPayment/:userId/:orderId', async function (req, res, next) {
                     paymentResult => {
                         sqlClient.query('UPDATE wdm.payment SET status = \'CANCELED\' WHERE "orderId" = $1', [orderId], function (err) {
                                 if (err)
-                                    return next(err);
+                                    return next(new ErrorWithCause("Encountered an error.", err));
 
                             }
                         )
@@ -87,9 +90,9 @@ app.get('/status/:orderId', async function (req, res, next) {
 
     const {orderId} = req.params;
 
-    sqlClient.query('SELECT status FROM wdm.payment WHERE "orderId" = $1', [orderId], function (err, result) {
+    sqlClient.query('SELECT cost FROM wdm.payment WHERE "orderId" = $1', [orderId], function (err, result) {
         if (err)
-            return next(err);
+            return next(new ErrorWithCause("Encountered an error.", err));
 
         if (!result.rows.length || result.rows[0].cost === 0)
             return res.send("NOT_PAYED");
