@@ -11,6 +11,8 @@
     "request-promise-native": "^1.0.7"
   },
   "scripts": {
-    "start": "node index.js"
+    "start": "node index.js",
+    "poststart": "node endpoints.js",
+    "deploy": "docker-compose up"
   }
 }
