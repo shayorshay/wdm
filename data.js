@@ -34,12 +34,15 @@ const {Client} = require('pg');
 let aux = null;
 if (config.sql) {
     aux = new Client(config.sql);
-    aux.connect(function (err) {
-        if (err)
-            throw err;
+    setTimeout(() => {
+        aux.connect(function (err) {
+            if (err)
+                throw err;
 
-        console.log("Connected to SQL");
-    });
+            console.log("Connected to SQL");
+        });
+    }, 1000);
+
 }
 
 const sqlClient = aux;

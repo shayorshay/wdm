@@ -21,25 +21,12 @@
 
 version: "3"
 services:
-  web:
-    # replace username/repo:tag with your name and image details
-    image: mihai1voicescu/wdm:basic
-    deploy:
-      replicas: 5
-      restart_policy:
-        condition: on-failure
-      resources:
-        limits:
-          cpus: "0.1"
-          memory: 50M
-    ports:
-      - "8000:8000"
-    networks:
-      - webnet
-
   postgres:
-    image: postgres
+#    image: postgres
+    build: ./postgres-docker
     restart: always
+    volumes:
+      - ./postgres-docker
     ports:
       - "5432:5432"
     networks:
@@ -47,6 +34,7 @@ services:
     environment:
       POSTGRES_PASSWORD: password
       POSTGRES_USER: user
+      POSTGRES_DB: wdm
 
   redis:
     image: redis
@@ -60,5 +48,37 @@ services:
     command: redis-server --appendonly yes
     networks:
       - webnet
+
+  admin:
+    image: adminer
+    restart: always
+    depends_on:
+      - postgres
+    ports:
+      - 8080:8080
+
+
+  web:
+    build: .
+    volumes:
+      - .:/usr/src/app
+    deploy:
+      replicas: 5
+      restart_policy:
+        condition: on-failure
+      resources:
+        limits:
+          cpus: "0.1"
+          memory: 50M
+    ports:
+      - "8000:8000"
+    networks:
+      - webnet
+
+    depends_on:
+      - redis
+      - postgres
+
+
 networks:
   webnet:
