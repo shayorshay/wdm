@@ -53,26 +53,26 @@ app.post('/pay/:userId/:orderId', async function (req, res, next) {
 app.post('/cancelPayment/:userId/:orderId', async function (req, res, next) {
     const {userId, orderId} = req.params;
 
-    sqlClient.query('SELECT cost FROM wdm.payment WHERE "orderId" = $1 AND status = \'PAID\'', [orderId], function (err, result) {
+    sqlClient.query('SELECT cost FROM wdm.payment WHERE "orderId" = $1', [orderId], function (err, result) {
             if (err)
                 return next(new ErrorWithCause("Encountered an error.", err));
 
             if (result.rowCount !== 1) {
                 //something went wrong
-                return res.sendStatus(404);
+                return res.sendStatus(403);
 
             } else {
                 let cost = result.rows[0].cost;
 
-                sqlEndpoints.addFunds(userId, cost).then(
+                sqlEndpoints.users.addFunds(userId, cost).then(
                     paymentResult => {
-                        sqlClient.query('UPDATE wdm.payment SET status = \'CANCELED\' WHERE "orderId" = $1', [orderId], function (err) {
+                        sqlClient.query('DELETE FROM wdm.payment WHERE "orderId" = $1', [orderId], function (err) {
                                 if (err)
                                     return next(new ErrorWithCause("Encountered an error.", err));
 
                             }
-                        )
-                        ;
+                        );
+
                         res.sendStatus(200)
                     },
 
