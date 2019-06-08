@@ -380,6 +380,26 @@ async function testEndpoint(handlers) {
 
         await assertWrongStatus(handlers.orders.checkout(orderId), 403);
     }
+    
+    {   //testing not enough in stock
+        let {orderId} = await createAndPopulateOrder();
+
+        result = await handlers.orders.get(orderId);
+        console.log(require('util').inspect(result, {depth: null, colors: true}));
+
+        result = await handlers.stock.getAvailability(itemId);
+        console.log(require('util').inspect(result, {depth: null, colors: true}));
+        
+        result = await handlers.stock.subtract(itemId, 18);
+        result = await handlers.stock.getAvailability(itemId);
+        assertObj({
+            stock: 0,
+            price: 10
+        }, result);
+
+        await assertWrongStatus(handlers.orders.checkout(orderId), 403);
+
+    }
 
     async function createAndPopulateOrder() {
         let {orderId} = await handlers.orders.create(userId);
