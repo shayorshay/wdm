@@ -127,16 +127,19 @@ app.post("/checkout/:orderId", async function (req, res, next) {
     try {
         order_status = await redisEndpoints.payment.getStatus(orderId);
     } catch (e) {
-        return next(new ErrorWithCause("Encountered an error.", e));
+        return next(new ErrorWithCause("Failed to get status", e));
     }
 
     if (order_status === "PAYED")
-        return res.sendStatus(403);
+        return next(new WebServiceError("Already payed", 403));
 
 
     redisClient.hgetall(orderId, async function (err, orderItems) {
         if (err)
             return next(new ErrorWithCause("Encountered an error.", err));
+
+        if (!orderItems)
+            return next(new WebServiceError("Could not find order id", 404));
 
         let {userId} = orderItems;
         orderItems.userId = undefined;
@@ -144,7 +147,7 @@ app.post("/checkout/:orderId", async function (req, res, next) {
         try {
             await redisEndpoints.payment.pay(userId, orderId);
         } catch (e) {
-            return next(new ErrorWithCause("Encountered an error.", e));
+            return next(new WebServiceError("Failed payment", 403, e));
         }
 
         try {
@@ -153,10 +156,10 @@ app.post("/checkout/:orderId", async function (req, res, next) {
             try {
                 await redisEndpoints.payment.cancelPayment(userId, orderId);
             } catch (e) {
-                return next(new Error(e.message));
+                return next(new ErrorWithCause("Failed cancel payment", e));
             }
 
-            res.sendStatus(403);
+            return next(new WebServiceError("Failed subtracting stock", 403, e));
         }
 
         res.sendStatus(200);

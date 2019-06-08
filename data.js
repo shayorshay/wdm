@@ -28,7 +28,15 @@ class ErrorWithCause extends Error {
     }
 }
 
+class WebServiceError extends ErrorWithCause {
+    constructor(message, statusCode, cause) {
+        super(message, cause);
+        this.statusCode = statusCode;
+    }
+}
+
 global.ErrorWithCause = ErrorWithCause;
+global.WebServiceError = WebServiceError;
 
 const {Client} = require('pg');
 let aux = null;
