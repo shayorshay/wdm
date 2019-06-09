@@ -185,4 +185,4 @@ app.post("/checkout/:orderId", async function (req, res, next) {
     });
 });
 
-module.exports = app;
+module.exports = {app};

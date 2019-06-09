@@ -104,4 +104,4 @@ app.post("/credit/add/:userId/:amount", function (req, res, next) {
     });
 });
 
-module.exports = app;
+module.exports = {app};

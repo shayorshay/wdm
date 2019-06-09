@@ -19,16 +19,16 @@ const sqlApp = express();
  * @property {number} credit
  */
 
-redisApp.use("/users/", require("./handlers/users"));
-redisApp.use("/stock/", require("./handlers/stock"));
-redisApp.use("/orders/", require("./handlers/orders"));
-redisApp.use("/payment/", require("./handlers/payment"));
+redisApp.use("/users/", require("./handlers/users").app);
+redisApp.use("/stock/", require("./handlers/stock").app);
+redisApp.use("/orders/", require("./handlers/orders").app);
+redisApp.use("/payment/", require("./handlers/payment").app);
 
 
-sqlApp.use("/users/", require("./handlers-postgres/users"));
-sqlApp.use("/stock/", require("./handlers-postgres/stock"));
-sqlApp.use("/orders/", require("./handlers-postgres/orders"));
-sqlApp.use("/payment/", require("./handlers-postgres/payment"));
+sqlApp.use("/users/", require("./handlers-postgres/users").app);
+sqlApp.use("/stock/", require("./handlers-postgres/stock").app);
+sqlApp.use("/orders/", require("./handlers-postgres/orders").app);
+sqlApp.use("/payment/", require("./handlers-postgres/payment").app);
 
 app.use("/redis/", redisApp);
 app.use("/sql/", sqlApp);
