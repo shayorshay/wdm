@@ -68,13 +68,13 @@ services:
     volumes:
       - .:/usr/src/app
     deploy:
-      replicas: 5
+      replicas: 20
       restart_policy:
         condition: on-failure
-      resources:
-        limits:
-          cpus: "0.1"
-          memory: 50M
+#      resources:
+#        limits:
+#          cpus: "1"
+#          memory: 100M
     ports:
       - "8000:8000"
     networks:
