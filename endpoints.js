@@ -7,7 +7,7 @@ const endpoints = require("./config").endpoints;
  * @typedef {"OK"} OKResponse
  */
 
-function Endpoints(base) {
+function Endpoints(base, modules) {
     base += '/';
     let e = JSON.parse(JSON.stringify(endpoints));
 
@@ -59,7 +59,7 @@ function Endpoints(base) {
              * @param amount
              * @return {Promise<OKResponse>}
              */
-            subtract: async (userId, amount) => {
+            subtract: modules ? modules.users.subtract : async (userId, amount) => {
                 return request({
                     uri: this.endpoints.users + `/credit/subtract/${userId}/${amount}`,
                     method: 'POST'
@@ -208,7 +208,7 @@ function Endpoints(base) {
     });
 }
 
-let sqlEndpoints = new Endpoints('sql'), redisEndpoints = new Endpoints('redis');
+let sqlEndpoints = new Endpoints('sql'), redisEndpoints = new Endpoints('redis', require('./handlers'));
 
 module.exports = {sqlEndpoints, redisEndpoints};
 
@@ -219,9 +219,9 @@ if (require.main === module) {
 
 async function main() {
     console.log("Beginning tests");
-    await testEndpoint(redisEndpoints);
+    await testEndpoint(new Endpoints('redis'));
     console.log("Redis DONE");
-    await testEndpoint(sqlEndpoints);
+    await testEndpoint(new Endpoints('sql'));
     console.log("SQL DONE");
 }
 
@@ -380,7 +380,7 @@ async function testEndpoint(handlers) {
 
         await assertWrongStatus(handlers.orders.checkout(orderId), 403);
     }
-    
+
     {   //testing not enough in stock
         let {orderId} = await createAndPopulateOrder();
 
@@ -389,7 +389,7 @@ async function testEndpoint(handlers) {
 
         result = await handlers.stock.getAvailability(itemId);
         console.log(require('util').inspect(result, {depth: null, colors: true}));
-        
+
         result = await handlers.stock.subtract(itemId, 18);
         result = await handlers.stock.getAvailability(itemId);
         assertObj({

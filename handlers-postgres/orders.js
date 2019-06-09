@@ -2,7 +2,13 @@
 
 const express = require('express');
 const app = express();
-const {sqlClient, sqlEndpoints} = require("../data");
+
+let sqlClient, sqlEndpoints;
+
+setTimeout(() => {
+    sqlClient = require("../data").sqlClient;
+    sqlEndpoints = require("../data").sqlEndpoints;
+});
 
 app.post("/create/:userId", function (req, res, next) {
 

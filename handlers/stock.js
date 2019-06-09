@@ -2,7 +2,14 @@
 
 const express = require('express');
 const app = express();
-const {redisClient, getAllIds, config, genId} = require("../data");
+let redisClient, getAllIds, config, genId;
+
+setTimeout(() => {
+    redisClient = require("../data").redisClient;
+    getAllIds = require("../data").getAllIds;
+    config = require("../data").config;
+    genId = require("../data").genId;
+});
 
 const colNames = {
     stock: "stock",

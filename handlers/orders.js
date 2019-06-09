@@ -2,7 +2,12 @@
 
 const express = require('express');
 const app = express();
-const {redisClient, genId, redisEndpoints} = require("../data");
+let redisClient, genId, redisEndpoints;
+setTimeout(() => {
+    redisClient = require("../data").redisClient;
+    genId = require("../data").genId;
+    redisEndpoints = require("../data").redisEndpoints;
+});
 
 const cols = {
     payment: "pmt:",

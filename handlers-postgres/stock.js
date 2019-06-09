@@ -2,7 +2,12 @@
 
 const express = require('express');
 const app = express();
-const {sqlClient, genId} = require('../data');
+let sqlClient, sqlEndpoints;
+
+setTimeout(() => {
+    sqlClient = require("../data").sqlClient;
+    sqlEndpoints = require("../data").sqlEndpoints;
+});
 
 app.get('/availability/:itemId', function (req, res, next) {
     /**
