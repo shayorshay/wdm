@@ -50,4 +50,4 @@ function extractStatusCode(err) {
     } while ((err = err.cause)) ;
 }
 
-app.listen(8000);
+app.listen(process.env.NODE_PORT || 8000);
