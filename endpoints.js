@@ -2,12 +2,13 @@
 
 const request = require("request-promise-native");
 const endpoints = require("./config").endpoints;
+const _endpoints = endpoints;
 
 /**
  * @typedef {"OK"} OKResponse
  */
 
-function Endpoints(base) {
+function Endpoints(base, endpoints=_endpoints) {
     base += '/';
     let e = JSON.parse(JSON.stringify(endpoints));
 
@@ -219,9 +220,9 @@ if (require.main === module) {
 
 async function main() {
     console.log("Beginning tests");
-    await testEndpoint(redisEndpoints);
+    await testEndpoint(new Endpoints('redis', require("./config")["endpoints-test"]));
     console.log("Redis DONE");
-    await testEndpoint(sqlEndpoints);
+    await testEndpoint(new Endpoints('sql', require("./config")["endpoints-test"]));
     console.log("SQL DONE");
 }
 
@@ -380,7 +381,7 @@ async function testEndpoint(handlers) {
 
         await assertWrongStatus(handlers.orders.checkout(orderId), 403);
     }
-    
+
     {   //testing not enough in stock
         let {orderId} = await createAndPopulateOrder();
 
@@ -389,7 +390,7 @@ async function testEndpoint(handlers) {
 
         result = await handlers.stock.getAvailability(itemId);
         console.log(require('util').inspect(result, {depth: null, colors: true}));
-        
+
         result = await handlers.stock.subtract(itemId, 18);
         result = await handlers.stock.getAvailability(itemId);
         assertObj({
