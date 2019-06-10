@@ -3,6 +3,7 @@
 const express = require('express');
 const app = express();
 const {redisClient, genId, redisEndpoints} = require("../data");
+const script = require('fs').readFileSync('./lua/remove-script.lua');
 
 const cols = {
     payment: "pmt:",
@@ -95,26 +96,17 @@ app.delete("/removeItem/:orderId/:itemId", async function (req, res, next) {    
         res.sendStatus(403);
 
     else {
-        // subtract item to orderItems (hincrby will create a hashkey even if it is not created yet.
-
-        redisClient.hincrby(orderId, itemId, -1, function (err, result) {
+        
+        redisClient.eval(script, 1, orderId, itemId, function(err, result) {
             if (err)
-                return next(new ErrorWithCause("Encountered an error.", err));
-
-            if (result < 0) {
-                // add item to orderItems (hincrby will create a hashkey even if it is not created yet.
-                redisClient.hincrby(orderId, itemId, 1, function (err) {
-                    if (err)
-                        return next(new ErrorWithCause("Encountered an error.", err));
-
-                    res.sendStatus(403);
-                });
-
-                return;
-            }
-
+                return next(err);
+    
+            if (!result)
+                return next(new WebServiceError("Encountered an error.", 403));
+    
             res.sendStatus(200);
         });
+
     }
 });
 
