@@ -139,7 +139,7 @@ services:
     volumes:
       - .:/usr/src/app
     deploy:
-      replicas: 40
+      replicas: 20
       restart_policy:
         condition: on-failure
 
@@ -165,7 +165,7 @@ services:
     volumes:
       - .:/usr/src/app
     deploy:
-      replicas: 40
+      replicas: 20
       restart_policy:
         condition: on-failure
 #    mem_limit: 200m
@@ -190,7 +190,7 @@ services:
     volumes:
       - .:/usr/src/app
     deploy:
-      replicas: 40
+      replicas: 20
       restart_policy:
         condition: on-failure
 
@@ -217,7 +217,7 @@ services:
     volumes:
       - .:/usr/src/app
     deploy:
-      replicas: 40
+      replicas: 20
       restart_policy:
         condition: on-failure
 
