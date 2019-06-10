@@ -3,6 +3,7 @@
 const express = require('express');
 const app = express();
 const {redisClient, getAllIds, config, genId} = require("../data");
+const fs = require('fs');
 
 const colNames = {
     stock: "stock",
@@ -33,23 +34,39 @@ app.get("/availability/:itemId", function (req, res, next) {
     });
 });
 
-app.post("/subtract/:itemId/:stock", function (req, res, next) {
+app.post("/subtract/:itemId/:stock", function (req, res, next) {    //should be atomic
     const {itemId, stock} = req.params;
 
-    redisClient.hincrby(itemId, colNames.stock, -stock, function (err, newNumber) {
-        if (err)
-            return next(new ErrorWithCause("Encountered an error.", err));
+    //lua
+    let file_content = fs.readFileSync('./lua/subtractstock.lua')
+    redisClient.eval(file_content, 1, itemId, stock, function(err, result) {
+        if (err) 
+            return next(err);
 
-        if (newNumber < 0)
-            return redisClient.hincrby(itemId, colNames.stock, stock, function (err) {
-                if (err)
-                    return next(new ErrorWithCause("Encountered an error.", err));
+        // res.sendStatus(200);
+        console.log(result);
 
-                res.sendStatus(403);
-            });
-
-        res.sendStatus(200);
     });
+
+    
+   
+      //res.sendStatus(200);
+
+  
+    // redisClient.hincrby(itemId, colNames.stock, -stock, function (err, newNumber) {
+    //     if (err)
+    //         return next(new ErrorWithCause("Encountered an error.", err));
+
+    //     if (newNumber < 0)
+    //         return redisClient.hincrby(itemId, colNames.stock, stock, function (err) {
+    //             if (err)
+    //                 return next(new ErrorWithCause("Encountered an error.", err));
+
+    //             res.sendStatus(403);
+    //         });
+
+    //     res.sendStatus(200);
+    // });
 });
 
 app.post("/add/:itemId/:stock", function (req, res, next) {
