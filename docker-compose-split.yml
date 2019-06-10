@@ -6,6 +6,8 @@ services:
       - "8080:8080"
     volumes:
       - "/var/run/docker.sock:/var/run/docker.sock"
+
+#    mem_limit: 200m
     deploy:
       placement:
         constraints: [node.role == manager]
@@ -23,6 +25,7 @@ services:
       - "5432:5432"
     networks:
       - webnet
+#    mem_limit: 1000m
     environment:
       POSTGRES_PASSWORD: password
       POSTGRES_USER: user
@@ -40,6 +43,7 @@ services:
       - "5442:5432"
     networks:
       - webnet
+#    mem_limit: 1000m
     environment:
       POSTGRES_PASSWORD: password
       POSTGRES_USER: user
@@ -57,6 +61,7 @@ services:
       - "5443:5432"
     networks:
       - webnet
+#    mem_limit: 1000m
     environment:
       POSTGRES_PASSWORD: password
       POSTGRES_USER: user
@@ -74,6 +79,7 @@ services:
       - "5444:5432"
     networks:
       - webnet
+#    mem_limit: 1000m
     environment:
       POSTGRES_PASSWORD: password
       POSTGRES_USER: user
@@ -85,12 +91,11 @@ services:
       - "6379:6379"
     volumes:
       - "/tmp/data:/data"
-    deploy:
-      placement:
-        constraints: [node.role == manager]
+
     command: redis-server --appendonly yes
     networks:
       - webnet
+#    mem_limit: 1000m
 
   redis-payment:
     image: redis
@@ -98,12 +103,11 @@ services:
       - "6382:6379"
     volumes:
       - "/tmp/data:/data"
-    deploy:
-      placement:
-        constraints: [node.role == manager]
+
     command: redis-server --appendonly yes
     networks:
       - webnet
+#    mem_limit: 1000m
 
   redis-stock:
     image: redis
@@ -111,12 +115,11 @@ services:
       - "6383:6379"
     volumes:
       - "/tmp/data:/data"
-    deploy:
-      placement:
-        constraints: [node.role == manager]
+
     command: redis-server --appendonly yes
     networks:
       - webnet
+#    mem_limit: 1000m
 
   redis-users:
     image: redis
@@ -124,12 +127,11 @@ services:
       - "6384:6379"
     volumes:
       - "/tmp/data:/data"
-    deploy:
-      placement:
-        constraints: [node.role == manager]
+
     command: redis-server --appendonly yes
     networks:
       - webnet
+#    mem_limit: 1000m
 
   web-orders:
 #    build: .
@@ -137,10 +139,11 @@ services:
     volumes:
       - .:/usr/src/app
     deploy:
-      replicas: 5
+      replicas: 20
       restart_policy:
         condition: on-failure
 
+#    mem_limit: 200m
     environment:
       REDIS_HOST: redis-orders
       SQL_HOST: postgres-orders
@@ -162,9 +165,10 @@ services:
     volumes:
       - .:/usr/src/app
     deploy:
-      replicas: 5
+      replicas: 20
       restart_policy:
         condition: on-failure
+#    mem_limit: 200m
     environment:
       REDIS_HOST: redis-payment
       SQL_HOST: postgres-payment
@@ -186,10 +190,11 @@ services:
     volumes:
       - .:/usr/src/app
     deploy:
-      replicas: 5
+      replicas: 20
       restart_policy:
         condition: on-failure
 
+#    mem_limit: 200m
     environment:
       REDIS_HOST: redis-stock
       SQL_HOST: postgres-stock
@@ -212,10 +217,11 @@ services:
     volumes:
       - .:/usr/src/app
     deploy:
-      replicas: 5
+      replicas: 20
       restart_policy:
         condition: on-failure
 
+#    mem_limit: 200m
     environment:
       REDIS_HOST: redis-users
       SQL_HOST: postgres-users
