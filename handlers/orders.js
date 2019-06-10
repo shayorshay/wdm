@@ -40,37 +40,50 @@ app.delete("/remove/:id", function (req, res, next) {
     });
 });
 
-app.get("/find/:orderId", function (req, res, next) {
-    const {orderId} = req.params;
-
-    redisClient.hgetall(orderId, async function (err, response) {
-        if (err)
-            return next(new ErrorWithCause("Encountered an error.", err));
-
-        if (!response)
-            return res.sendStatus(404);
-
-        const {userId} = response;
-
-        let orderItems = {};
-
-        response.userId = undefined;
-
-        for (let k in response) {
-            if (response[k])
-                orderItems[k] = +response[k];
-        }
-
-        let status = await redisEndpoints.payment.getStatus(orderId);
-
-        let result = {
-            userId,
-            orderItems,
-            status
-        };
-
-        res.send(result);
+function getOrder(orderId){
+    return new Promise( function(resolve,reject){
+        redisClient.hgetall(orderId, async function (err, response) {
+            if (err)
+                return reject(new ErrorWithCause("Encountered an error.", err));
+    
+            if (!response)
+                resolve(response);
+    
+            const {userId} = response;
+    
+            let orderItems = {};
+    
+            response.userId = undefined;
+    
+            for (let k in response) {
+                if (response[k])
+                    orderItems[k] = +response[k];
+            }
+    
+            let status = await redisEndpoints.payment.getStatus(orderId);
+    
+            let result = {
+                userId,
+                orderItems,
+                status
+            };
+    
+            resolve(result);
+        });
     });
+}
+app.get("/find/:orderId", async function (req, res, next) {
+    const {orderId} = req.params;
+    let result;
+    try{
+        result = await getOrder(orderId);
+    } catch(e){
+        return next(e);
+    }
+    if(!result)
+    res.sendStatus(404);
+    else
+        res.send(result);
 });
 
 
@@ -172,7 +185,7 @@ app.post("/checkout/:orderId", async function (req, res, next) {
     });
 });
 
-module.exports = {app};
+module.exports = {app,getOrder};
 
 /**
  * @class Order

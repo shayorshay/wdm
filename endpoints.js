@@ -31,7 +31,7 @@ function Endpoints(base, modules) {
              * @param name
              * @return {Promise<CreateUserResponse>}
              */
-            createUser: async (name) => {
+            createUser: modules ? modules.users.create: async (name) => {
                 return request({
                     body: {name},
                     uri: this.endpoints.users + `/create`,
@@ -46,7 +46,7 @@ function Endpoints(base, modules) {
              * @param amount
              * @return {Promise<OKResponse>}
              */
-            addFunds: async (userId, amount) => {
+            addFunds: modules ? modules.users.addFunds : async (userId, amount) => {
                 return request({
                     uri: this.endpoints.users + `/credit/add/${userId}/${amount}`,
                     method: 'POST'
@@ -83,7 +83,7 @@ function Endpoints(base, modules) {
 
         stock: {
 
-            getAvailability: async (itemId) => {
+            getAvailability: modules? modules.stock.getAvailability:async (itemId) => {
                 return request({
                     uri: this.endpoints.stock + `/availability/${itemId}`,
                     json: true,
@@ -91,7 +91,7 @@ function Endpoints(base, modules) {
                 });
             },
 
-            subtract: async (id, amount) => {
+            subtract: modules? modules.stock.subtractStocks: async (id, amount) => {
                 return request({
                     uri: this.endpoints.stock + `/subtract/${id}/${amount}`,
                     method: 'POST'
@@ -121,7 +121,7 @@ function Endpoints(base, modules) {
                 }
             },
 
-            add: async (id, amount) => {
+            add:  async (id, amount) => {
                 return request({
                     uri: this.endpoints.stock + `/add/${id}/${amount}`,
                     method: 'POST',
@@ -139,7 +139,7 @@ function Endpoints(base, modules) {
         },
 
         orders: {
-            get: async (orderId) => {
+            get: modules? modules.orders.getOrder: async (orderId) => {
                 return request({
                     uri: this.endpoints.orders + `/find/${orderId}`,
                     method: 'GET',
@@ -185,19 +185,19 @@ function Endpoints(base, modules) {
         },
 
         payment: {
-            pay: async (userId, orderId) => {
+            pay: modules? modules.payment.pay: async (userId, orderId) => {
                 return request({
                     uri: this.endpoints.payment + `/pay/${userId}/${orderId}`,
                     method: 'POST'
                 });
             },
-            cancelPayment: async (userId, orderId) => {
+            cancelPayment: modules? modules.payment.cancelPayment:async (userId, orderId) => {
                 return request({
                     uri: this.endpoints.payment + `/cancelPayment/${userId}/${orderId}`,
                     method: 'POST'
                 });
             },
-            getStatus: async (orderId) => {
+            getStatus: modules? modules.payment.getStatus: async (orderId) => {
                 return request({
                     uri: this.endpoints.payment + `/status/${orderId}`,
                     method: 'GET'
