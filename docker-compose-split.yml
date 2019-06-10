@@ -134,6 +134,7 @@ services:
 #    mem_limit: 1000m
 
   web-orders:
+    mem_limit: 400
 #    build: .
     image: mihai1voicescu/wdm:basic
     volumes:
@@ -160,6 +161,7 @@ services:
 
 
   web-payment:
+    mem_limit: 400
 #    build: .
     image: mihai1voicescu/wdm:basic
     volumes:
@@ -185,6 +187,7 @@ services:
 
 
   web-stock:
+    mem_limit: 400
 #    build: .
     image: mihai1voicescu/wdm:basic
     volumes:
@@ -212,6 +215,7 @@ services:
 
 
   web-users:
+    mem_limit: 400
 #    build: .
     image: mihai1voicescu/wdm:basic
     volumes:
