@@ -38,35 +38,23 @@ app.post("/subtract/:itemId/:stock", function (req, res, next) {    //should be 
     const {itemId, stock} = req.params;
 
     //lua
-    let file_content = fs.readFileSync('./lua/subtractstock.lua')
-    redisClient.eval(file_content, 1, itemId, stock, function(err, result) {
-        if (err) 
+    redisClient.eval(`local itemStock = redis.call("HGET", KEYS[1], 'stock')
+local toSubtract = ARGV[1];
+
+if (itemStock > toSubtract) then
+    return redis.call("HINCRBY", KEYS[1], 'stock', -toSubtract)
+else
+    return nil
+end
+`, 1, itemId, stock, function(err, result) {
+        if (err)
             return next(err);
 
-        // res.sendStatus(200);
-        console.log(result);
+        if (!result)
+            return next(new WebServiceError("Not enough funds.", 403));
 
+        res.sendStatus(200);
     });
-
-    
-   
-      //res.sendStatus(200);
-
-  
-    // redisClient.hincrby(itemId, colNames.stock, -stock, function (err, newNumber) {
-    //     if (err)
-    //         return next(new ErrorWithCause("Encountered an error.", err));
-
-    //     if (newNumber < 0)
-    //         return redisClient.hincrby(itemId, colNames.stock, stock, function (err) {
-    //             if (err)
-    //                 return next(new ErrorWithCause("Encountered an error.", err));
-
-    //             res.sendStatus(403);
-    //         });
-
-    //     res.sendStatus(200);
-    // });
 });
 
 app.post("/add/:itemId/:stock", function (req, res, next) {
