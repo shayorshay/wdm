@@ -86,7 +86,7 @@ app.post("/addItem/:orderId/:itemId", async function (req, res, next) {
 });
 
 
-app.delete("/removeItem/:orderId/:itemId", async function (req, res, next) {
+app.delete("/removeItem/:orderId/:itemId", async function (req, res, next) {    //lua script???
 
     const {orderId, itemId} = req.params;
 
@@ -96,6 +96,7 @@ app.delete("/removeItem/:orderId/:itemId", async function (req, res, next) {
 
     else {
         // subtract item to orderItems (hincrby will create a hashkey even if it is not created yet.
+
         redisClient.hincrby(orderId, itemId, -1, function (err, result) {
             if (err)
                 return next(new ErrorWithCause("Encountered an error.", err));

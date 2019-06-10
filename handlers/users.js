@@ -3,7 +3,7 @@
 const express = require('express');
 const app = express();
 const {redisClient, getAllIds, genId} = require("../data");
-
+const script = require('fs').readFileSync('./lua/subtract-script.lua');
 
 app.post("/create/", async function (req, res, next) {
     /**
@@ -74,17 +74,12 @@ app.post("/credit/subtract/:userId/:amount", function (req, res, next) {
      */
     const {userId, amount} = req.params;
 
-    redisClient.hincrby(userId, "credit", -amount, function (err, newCredit) {
+    redisClient.eval(script, 1, userId, "credit", amount, function(err, result) {
         if (err)
-            return next(new ErrorWithCause("Encountered an error.", err));
+            return next(err);
 
-        if (newCredit < 0)
-            return redisClient.hincrby(userId, "credit", amount, function (err) {
-                if (err)
-                    return next(new ErrorWithCause("Encountered an error.", err));
-
-                res.sendStatus(403);
-            });
+        if (!result)
+            return next(new WebServiceError("Not enough credit.", 403));
 
         res.sendStatus(200);
     });
