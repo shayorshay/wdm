@@ -15,4 +15,4 @@ EXPOSE 8000
 
 #CMD ["npm", "install"]
 
-CMD [ "node", "index.js" ]
+CMD [ "pm2", "start", "index.js", "-i", "-2"]
