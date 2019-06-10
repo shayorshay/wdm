@@ -31,7 +31,7 @@ function Endpoints(base, modules) {
              * @param name
              * @return {Promise<CreateUserResponse>}
              */
-            createUser: modules ? modules.users.create: async (name) => {
+            createUser: async (name) => {
                 return request({
                     body: {name},
                     uri: this.endpoints.users + `/create`,

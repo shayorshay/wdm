@@ -47,7 +47,7 @@ function getOrder(orderId){
                 return reject(new ErrorWithCause("Encountered an error.", err));
     
             if (!response)
-                resolve(response);
+                return resolve(response);
     
             const {userId} = response;
     
