@@ -139,8 +139,7 @@ services:
     volumes:
       - .:/usr/src/app
     deploy:
-      replicas: 20
-      mode: global
+      replicas: 40
       restart_policy:
         condition: on-failure
 
@@ -166,8 +165,7 @@ services:
     volumes:
       - .:/usr/src/app
     deploy:
-      replicas: 20
-      mode: global
+      replicas: 40
       restart_policy:
         condition: on-failure
 #    mem_limit: 200m
@@ -192,8 +190,7 @@ services:
     volumes:
       - .:/usr/src/app
     deploy:
-      replicas: 20
-      mode: global
+      replicas: 40
       restart_policy:
         condition: on-failure
 
@@ -220,8 +217,7 @@ services:
     volumes:
       - .:/usr/src/app
     deploy:
-      replicas: 20
-      mode: global
+      replicas: 40
       restart_policy:
         condition: on-failure
 
