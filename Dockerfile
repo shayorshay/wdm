@@ -16,4 +16,5 @@ EXPOSE 8000
 
 #CMD ["npm", "install"]
 
-CMD [ "pm2", "start", "index.js", "-i", "-2"]
+CMD ["pm2-runtime", "index.js", "-i", "4"]
+#CMD [ "pm2", "start", ]
