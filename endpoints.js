@@ -2,12 +2,13 @@
 
 const request = require("request-promise-native");
 const endpoints = require("./config").endpoints;
+const _endpoints = endpoints;
 
 /**
  * @typedef {"OK"} OKResponse
  */
 
-function Endpoints(base, modules) {
+function Endpoints(base, modules, endpoints=_endpoints) {
     base += '/';
     let e = JSON.parse(JSON.stringify(endpoints));
 
@@ -219,9 +220,9 @@ if (require.main === module) {
 
 async function main() {
     console.log("Beginning tests");
-    await testEndpoint(new Endpoints('redis'));
+    await testEndpoint(new Endpoints('redis', require("./config")["endpoints-test"]));
     console.log("Redis DONE");
-    await testEndpoint(new Endpoints('sql'));
+    await testEndpoint(new Endpoints('sql', require("./config")["endpoints-test"]));
     console.log("SQL DONE");
 }
 

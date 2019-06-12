@@ -1,0 +1,240 @@
+version: "3"
+services:
+  visualizer:
+    image: dockersamples/visualizer:stable
+    ports:
+      - "8080:8080"
+    volumes:
+      - "/var/run/docker.sock:/var/run/docker.sock"
+
+#    mem_limit: 200m
+    deploy:
+      placement:
+        constraints: [node.role == manager]
+    networks:
+      - webnet
+
+  postgres-orders:
+    image: mihai1voicescu/wdm-postgres
+    #    build: ./postgres-docker
+
+    restart: always
+    #    volumes:
+    #      - ./postgres-docker
+    ports:
+      - "5432:5432"
+    networks:
+      - webnet
+#    mem_limit: 1000m
+    environment:
+      POSTGRES_PASSWORD: password
+      POSTGRES_USER: user
+      POSTGRES_DB: wdm
+
+
+  postgres-payment:
+    image: mihai1voicescu/wdm-postgres
+    #    build: ./postgres-docker
+
+    restart: always
+    #    volumes:
+    #      - ./postgres-docker
+    ports:
+      - "5442:5432"
+    networks:
+      - webnet
+#    mem_limit: 1000m
+    environment:
+      POSTGRES_PASSWORD: password
+      POSTGRES_USER: user
+      POSTGRES_DB: wdm
+
+
+  postgres-stock:
+    image: mihai1voicescu/wdm-postgres
+    #    build: ./postgres-docker
+
+    restart: always
+    #    volumes:
+    #      - ./postgres-docker
+    ports:
+      - "5443:5432"
+    networks:
+      - webnet
+#    mem_limit: 1000m
+    environment:
+      POSTGRES_PASSWORD: password
+      POSTGRES_USER: user
+      POSTGRES_DB: wdm
+
+
+  postgres-users:
+    image: mihai1voicescu/wdm-postgres
+    #    build: ./postgres-docker
+
+    restart: always
+    #    volumes:
+    #      - ./postgres-docker
+    ports:
+      - "5444:5432"
+    networks:
+      - webnet
+#    mem_limit: 1000m
+    environment:
+      POSTGRES_PASSWORD: password
+      POSTGRES_USER: user
+      POSTGRES_DB: wdm
+
+  redis-orders:
+    image: redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - "/tmp/data:/data"
+
+    command: redis-server --appendonly yes
+    networks:
+      - webnet
+#    mem_limit: 1000m
+
+  redis-payment:
+    image: redis
+    ports:
+      - "6382:6379"
+    volumes:
+      - "/tmp/data:/data"
+
+    command: redis-server --appendonly yes
+    networks:
+      - webnet
+#    mem_limit: 1000m
+
+  redis-stock:
+    image: redis
+    ports:
+      - "6383:6379"
+    volumes:
+      - "/tmp/data:/data"
+
+    command: redis-server --appendonly yes
+    networks:
+      - webnet
+#    mem_limit: 1000m
+
+  redis-users:
+    image: redis
+    ports:
+      - "6384:6379"
+    volumes:
+      - "/tmp/data:/data"
+
+    command: redis-server --appendonly yes
+    networks:
+      - webnet
+#    mem_limit: 1000m
+
+  web-orders:
+#    build: .
+    image: mihai1voicescu/wdm:basic
+    volumes:
+      - .:/usr/src/app
+    deploy:
+      mode: global
+      restart_policy:
+        condition: on-failure
+
+#    mem_limit: 200m
+    environment:
+      REDIS_HOST: redis-orders
+      SQL_HOST: postgres-orders
+      NODE_PORT: 8001
+
+    ports:
+      - "8001:8001"
+    networks:
+      - webnet
+
+    depends_on:
+      - redis-orders
+      - postgres-orders
+
+
+  web-payment:
+#    build: .
+    image: mihai1voicescu/wdm:basic
+    volumes:
+      - .:/usr/src/app
+    deploy:
+      mode: global
+      restart_policy:
+        condition: on-failure
+#    mem_limit: 200m
+    environment:
+      REDIS_HOST: redis-payment
+      SQL_HOST: postgres-payment
+      NODE_PORT: 8002
+
+    ports:
+      - "8002:8002"
+    networks:
+      - webnet
+
+    depends_on:
+      - redis-payment
+      - postgres-payment
+
+
+  web-stock:
+#    build: .
+    image: mihai1voicescu/wdm:basic
+    volumes:
+      - .:/usr/src/app
+    deploy:
+      mode: global
+      restart_policy:
+        condition: on-failure
+
+#    mem_limit: 200m
+    environment:
+      REDIS_HOST: redis-stock
+      SQL_HOST: postgres-stock
+      NODE_PORT: 8003
+
+
+    ports:
+      - "8003:8003"
+    networks:
+      - webnet
+
+    depends_on:
+      - redis-stock
+      - postgres-stock
+
+
+  web-users:
+#    build: .
+    image: mihai1voicescu/wdm:basic
+    volumes:
+      - .:/usr/src/app
+    deploy:
+      mode: global
+      restart_policy:
+        condition: on-failure
+
+#    mem_limit: 200m
+    environment:
+      REDIS_HOST: redis-users
+      SQL_HOST: postgres-users
+      NODE_PORT: 8004
+
+    ports:
+      - "8004:8004"
+    networks:
+      - webnet
+
+    depends_on:
+      - redis-users
+      - postgres-users
+
+networks:
+  webnet:

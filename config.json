@@ -11,9 +11,15 @@
     "port": 5432
   },
   "endpoints" : {
-    "users": "http://127.0.0.1:8000/",
-    "stock": "http://127.0.0.1:8000/",
-    "orders": "http://127.0.0.1:8000/",
-    "payment":"http://127.0.0.1:8000/"
+    "orders": "http://web-orders:8001/",
+    "payment":"http://web-payment:8002/",
+    "stock": "http://web-stock:8003/",
+    "users": "http://web-users:8004/"
+  },
+  "endpoints-test" : {
+    "orders": "http://127.0.0.1:8001/",
+    "payment":"http://127.0.0.1:8002/",
+    "stock": "http://127.0.0.1:8003/",
+    "users": "http://127.0.0.1:8004/"
   }
 }
