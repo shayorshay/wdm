@@ -74,6 +74,9 @@ app.post("/credit/subtract/:userId/:amount", function (req, res, next) {
      */
     const {userId, amount} = req.params;
 
+    if (!amount)
+        return next(new WebServiceError("Invalid amount", 403));
+
     redisClient.eval(script, 1, userId, "credit", amount, function(err, result) {
         if (err)
             return next(err);

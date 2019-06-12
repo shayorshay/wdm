@@ -38,7 +38,10 @@ app.get("/availability/:itemId", function (req, res, next) {
 app.post("/subtract/:itemId/:stock", function (req, res, next) {
     const {itemId, stock} = req.params;
 
-    redisClient.eval(script, 1, itemId, "stock", stock, function(err, result) {
+    if (!stock)
+        return next(new WebServiceError("Invalid stock amount", 403));
+
+    redisClient.eval(script, 1, itemId, stock, function(err, result) {
         if (err)
             return next(err);
 
