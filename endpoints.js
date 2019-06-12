@@ -209,7 +209,7 @@ function Endpoints(base, modules, endpoints=_endpoints) {
     });
 }
 
-let sqlEndpoints = new Endpoints('sql'), redisEndpoints = new Endpoints('redis', require('./handlers'));
+let sqlEndpoints = new Endpoints('sql',  require('./handlers-postgres')), redisEndpoints = new Endpoints('redis', require('./handlers'));
 
 module.exports = {sqlEndpoints, redisEndpoints};
 
@@ -220,9 +220,9 @@ if (require.main === module) {
 
 async function main() {
     console.log("Beginning tests");
-    await testEndpoint(new Endpoints('redis', require("./config")["endpoints-test"]));
+    await testEndpoint(new Endpoints('redis', undefined, require("./config")["endpoints-test"]));
     console.log("Redis DONE");
-    await testEndpoint(new Endpoints('sql', require("./config")["endpoints-test"]));
+    await testEndpoint(new Endpoints('sql', undefined, require("./config")["endpoints-test"]));
     console.log("SQL DONE");
 }
 
