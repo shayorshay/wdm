@@ -22,13 +22,13 @@ function getAvailability(itemId){
         redisClient.hgetall(itemId, function (err, item) {
             if (err)
                 return reject(new ErrorWithCause("Encountered an error.", err));
-    
+
             // if (!item)
             //     return reject;
-    
+
             item.price = +item.price;
             item.stock = +item.stock;
-    
+
             resolve(item);
         });
     });
@@ -44,7 +44,7 @@ app.get("/availability/:itemId", async function (req, res, next) {
      */
     try{
         result = await getAvailability(itemId);
-    } catch{
+    } catch (e) {
         return next(e);
     }
     if (!result)
@@ -57,16 +57,16 @@ function subtractStocks(itemId,stock){
         redisClient.hincrby(itemId, colNames.stock, -stock, function (err, newNumber) {
             if (err)
                 return next(new ErrorWithCause("Encountered an error.", err));
-    
+
             if (newNumber < 0)
                 return redisClient.hincrby(itemId, colNames.stock, stock, function (err) {
                     if (err)
                         return next(new ErrorWithCause("Encountered an error.", err));
-    
+
                     return reject(new WebServiceError("Not enough stocks.", 403, err));
-                   
+
                 });
-    
+
             resolve();
         });
     });
@@ -80,7 +80,7 @@ app.post("/subtract/:itemId/:stock", async function (req, res, next) {
     }
 
     res.sendStatus(200);
-    
+
 });
 
 
@@ -93,7 +93,7 @@ app.post("/add/:itemId/:stock", async function (req, res, next) {
 
         res.sendStatus(200);
     })
-    
+
 });
 
 app.post("/item/create", function (req, res, next) {
