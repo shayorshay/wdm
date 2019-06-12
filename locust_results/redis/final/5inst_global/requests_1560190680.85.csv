@@ -1,0 +1,13 @@
+"Method","Name","# requests","# failures","Median response time","Average response time","Min response time","Max response time","Average Content Size","Requests/s"
+"POST","/orders/addItem",216724,0,1700,1505,35,3541,2,216724.00
+"POST","/orders/checkout",78914,79,6100,6504,951,73317,1,78914.00
+"POST","/orders/create",259934,2,560,801,18,113362,57,259934.00
+"GET","/orders/find/",73986,0,1800,1745,35,3361,184,73986.00
+"DELETE","/orders/remove",121187,0,570,614,16,2059,2,121187.00
+"DELETE","/orders/removeItem/",65306,9690,1700,1658,68,2946,1,65306.00
+"POST","/redis/stock/item/create",352739,5,500,890,2,104265,57,352739.00
+"POST","/redis/users/create",27417,0,830,3740,2,113527,57,27417.00
+"POST","/stock/add",351914,0,320,382,1,2025,2,351914.00
+"GET","/stock/item/availability",28145,1451,970,2357,16,110917,79,28145.00
+"POST","/users/credit/add/",29303,36,2100,5130,39,111485,1,29303.00
+"None","Total",1605569,11263,660,1325,3,113527,34,1605569.00

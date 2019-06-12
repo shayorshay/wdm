@@ -1,0 +1,44 @@
+Count,Message,Traceback,Nodes
+3,Expecting value: line 1 column 1 (char 0),"  File ""/usr/local/lib/python2.7/site-packages/locustio-0.11.0-py2.7.egg/locust/core.py"", line 361, in run
+    self.execute_next_task()
+  File ""/usr/local/lib/python2.7/site-packages/locustio-0.11.0-py2.7.egg/locust/core.py"", line 387, in execute_next_task
+    self.execute_task(task[""callable""], *task[""args""], **task[""kwargs""])
+  File ""/usr/local/lib/python2.7/site-packages/locustio-0.11.0-py2.7.egg/locust/core.py"", line 399, in execute_task
+    task(self, *args, **kwargs)
+  File ""/var/app/current/locustfile.py"", line 79, in orders_create
+    json = resp.json()
+  File ""/usr/local/lib/python2.7/site-packages/requests-2.22.0-py2.7.egg/requests/models.py"", line 897, in json
+    return complexjson.loads(self.text, **kwargs)
+  File ""/usr/lib64/python2.7/dist-packages/simplejson/__init__.py"", line 505, in loads
+    return _default_decoder.decode(s)
+  File ""/usr/lib64/python2.7/dist-packages/simplejson/decoder.py"", line 370, in decode
+    obj, end = self.raw_decode(s)
+  File ""/usr/lib64/python2.7/dist-packages/simplejson/decoder.py"", line 400, in raw_decode
+    return self.scan_once(s, idx=_w(s, idx).end())
+",ip-172-31-45-21_9739bc9e073e465e89816debbcf6f92d
+3,Expecting value: line 1 column 1 (char 0),"  File ""/usr/local/lib/python2.7/site-packages/locustio-0.11.0-py2.7.egg/locust/core.py"", line 361, in run
+    self.execute_next_task()
+  File ""/usr/local/lib/python2.7/site-packages/locustio-0.11.0-py2.7.egg/locust/core.py"", line 387, in execute_next_task
+    self.execute_task(task[""callable""], *task[""args""], **task[""kwargs""])
+  File ""/usr/local/lib/python2.7/site-packages/locustio-0.11.0-py2.7.egg/locust/core.py"", line 399, in execute_task
+    task(self, *args, **kwargs)
+  File ""/var/app/current/locustfile.py"", line 55, in populate_stock
+    json_resp = resp.json()
+  File ""/usr/local/lib/python2.7/site-packages/requests-2.22.0-py2.7.egg/requests/models.py"", line 897, in json
+    return complexjson.loads(self.text, **kwargs)
+  File ""/usr/lib64/python2.7/dist-packages/simplejson/__init__.py"", line 505, in loads
+    return _default_decoder.decode(s)
+  File ""/usr/lib64/python2.7/dist-packages/simplejson/decoder.py"", line 370, in decode
+    obj, end = self.raw_decode(s)
+  File ""/usr/lib64/python2.7/dist-packages/simplejson/decoder.py"", line 400, in raw_decode
+    return self.scan_once(s, idx=_w(s, idx).end())
+",ip-172-31-45-21_9739bc9e073e465e89816debbcf6f92d
+16615,"{""cause"":{""name"":""StatusCodeError"",""statusCode"":500,""message"":""500 - \""{\\\""cause\\\"":{\\\""command\\\"":\\\""EVAL\\\"",\\\""args\\\"":[{\\\""type\\\"":\\\""Buffer\\\"",\\\""data\\\"":[108,111,99,97,108,32,97,109,111,117,110,116,32,61,32,114,101,100,105,115,46,99,97,108,108,40,34,72,71,69,84,34,44,32,75,69,89,83,91,49,93,44,32,65,82,71,86,91,49,93,41,10,108,111,99,97,108,32,116,111,83,117,98,116,114,97,99,116,32,61,32,116,111,110,117,109,98,101,114,40,65,82,71,86,91,50,93,41,59,10,10,105,102,32,40,97,109,111,117,110,116,32,126,61,32,110,105,108,32,97,110,100,32,116,111,110,117,109,98,101,114,40,97,109,111,117,110,116,41,32,62,61,32,116,111,83,117,98,116,114,97,99,116,41,32,116,104,101,110,10,32,32,32,32,114,101,116,117,114,110,32,114,101,100,105,115,46,99,97,108,108,40,34,72,73,78,67,82,66,89,34,44,32,75,69,89,83,91,49,93,44,32,65,82,71,86,91,49,93,44,32,45,116,111,83,117,98,116,114,97,99,116,41,10,101,108,115,101,10,32,32,32,32,114,101,116,117,114,110,32,110,105,108,10,101,110,100,10]},1,\\\""item:2817f5192ea5728b8a3ea9a02a123aaa0259606b\\\"",\\\""stock\\\"",\\\""0\\\""],\\\""code\\\"":\\\""ERR\\\""}}\"""",""error"":""{\""cause\"":{\""command\"":\""EVAL\"",\""args\"":[{\""type\"":\""Buffer\"",\""data\"":[108,111,99,97,108,32,97,109,111,117,110,116,32,61,32,114,101,100,105,115,46,99,97,108,108,40,34,72,71,69,84,34,44,32,75,69,89,83,91,49,93,44,32,65,82,71,86,91,49,93,41,10,108,111,99,97,108,32,116,111,83,117,98,116,114,97,99,116,32,61,32,116,111,110,117,109,98,101,114,40,65,82,71,86,91,50,93,41,59,10,10,105,102,32,40,97,109,111,117,110,116,32,126,61,32,110,105,108,32,97,110,100,32,116,111,110,117,109,98,101,114,40,97,109,111,117,110,116,41,32,62,61,32,116,111,83,117,98,116,114,97,99,116,41,32,116,104,101,110,10,32,32,32,32,114,101,116,117,114,110,32,114,101,100,105,115,46,99,97,108,108,40,34,72,73,78,67,82,66,89,34,44,32,75,69,89,83,91,49,93,44,32,65,82,71,86,91,49,93,44,32,45,116,111,83,117,98,116,114,97,99,116,41,10,101,108,115,101,10,32,32,32,32,114,101,116,117,114,110,32,110,105,108,10,101,110,100,10]},1,\""item:2817f5192ea5728b8a3ea9a02a123aaa0259606b\"",\""stock\"",\""0\""],\""code\"":\""ERR\""}}"",""options"":{""uri"":""http://web-stock:8003/redis/stock/subtract/item:2817f5192ea5728b8a3ea9a02a123aaa0259606b/0"",""method"":""POST"",""simple"":true,""resolveWithFullResponse"":false,""transform2xxOnly"":false},""response"":{""statusCode"":500,""body"":""{\""cause\"":{\""command\"":\""EVAL\"",\""args\"":[{\""type\"":\""Buffer\"",\""data\"":[108,111,99,97,108,32,97,109,111,117,110,116,32,61,32,114,101,100,105,115,46,99,97,108,108,40,34,72,71,69,84,34,44,32,75,69,89,83,91,49,93,44,32,65,82,71,86,91,49,93,41,10,108,111,99,97,108,32,116,111,83,117,98,116,114,97,99,116,32,61,32,116,111,110,117,109,98,101,114,40,65,82,71,86,91,50,93,41,59,10,10,105,102,32,40,97,109,111,117,110,116,32,126,61,32,110,105,108,32,97,110,100,32,116,111,110,117,109,98,101,114,40,97,109,111,117,110,116,41,32,62,61,32,116,111,83,117,98,116,114,97,99,116,41,32,116,104,101,110,10,32,32,32,32,114,101,116,117,114,110,32,114,101,100,105,115,46,99,97,108,108,40,34,72,73,78,67,82,66,89,34,44,32,75,69,89,83,91,49,93,44,32,65,82,71,86,91,49,93,44,32,45,116,111,83,117,98,116,114,97,99,116,41,10,101,108,115,101,10,32,32,32,32,114,101,116,117,114,110,32,110,105,108,10,101,110,100,10]},1,\""item:2817f5192ea5728b8a3ea9a02a123aaa0259606b\"",\""stock\"",\""0\""],\""code\"":\""ERR\""}}"",""headers"":{""x-powered-by"":""Express"",""content-type"":""application/json; charset=utf-8"",""content-length"":""954"",""etag"":""W/\""3ba-vkO9z4BMaGMXgnzjcFfj+dbf5VQ\"""",""date"":""Tue, 11 Jun 2019 18:25:39 GMT"",""connection"":""close""},""request"":{""uri"":{""protocol"":""http:"",""slashes"":true,""auth"":null,""host"":""web-stock:8003"",""port"":""8003"",""hostname"":""web-stock"",""hash"":null,""search"":null,""query"":null,""pathname"":""/redis/stock/subtract/item:2817f5192ea5728b8a3ea9a02a123aaa0259606b/0"",""path"":""/redis/stock/subtract/item:2817f5192ea5728b8a3ea9a02a123aaa0259606b/0"",""href"":""http://web-stock:8003/redis/stock/subtract/item:2817f5192ea5728b8a3ea9a02a123aaa0259606b/0""},""method"":""POST"",""headers"":{""content-length"":0}}}},""statusCode"":403}","  File ""/usr/local/lib/python2.7/site-packages/locustio-0.11.0-py2.7.egg/locust/core.py"", line 361, in run
+    self.execute_next_task()
+  File ""/usr/local/lib/python2.7/site-packages/locustio-0.11.0-py2.7.egg/locust/core.py"", line 387, in execute_next_task
+    self.execute_task(task[""callable""], *task[""args""], **task[""kwargs""])
+  File ""/usr/local/lib/python2.7/site-packages/locustio-0.11.0-py2.7.egg/locust/core.py"", line 399, in execute_task
+    task(self, *args, **kwargs)
+  File ""/var/app/current/locustfile.py"", line 135, in orders_checkout
+    raise Exception(resp.content)
+","ip-172-31-5-108_d9bdf422d6ed410c9caa244ad83ff444, ip-172-31-45-21_e31baeebfbc4474c8fec497493691ed7, ip-172-31-31-204_4b9945389dd047ecaa087bc08fd686e3, ip-172-31-21-198_3585ef490360495bbf801b3d1dce0480, ip-172-31-0-205_094f9d54c9224196909dc5f193806620, ip-172-31-31-204_4cbd8d6569a340cfb8e7ce41380f589d, ip-172-31-0-205_c1d2e63e267741bd9a4dd350c43eccc8, ip-172-31-45-21_b1441e5843b1475289447ccebf48a43f, ip-172-31-21-198_77f57a200fa94faaa8a0cb0bcc99119c, ip-172-31-31-204_22a5915599a94df5ac84a0e637515c87, ip-172-31-45-21_effc0e0a48fb47f295229c356f6b7c23, ip-172-31-21-198_2d4089da46964918b4f8383014ba37df, ip-172-31-21-198_2296d1b90f324109ad9f806c0df150f2, ip-172-31-31-204_52f9ecc3bd3f468abd33b006d160ee0a, ip-172-31-0-205_c611bb0615d9400f9e8de220c2af48d6, ip-172-31-5-108_5bda53eb3196409f87f7db4f57a6bee6, ip-172-31-45-21_9739bc9e073e465e89816debbcf6f92d, ip-172-31-5-108_1210cd8a648d42b0af98516d72ffb48b, ip-172-31-0-205_979beaae93f942dc8af5cc32633a0431"

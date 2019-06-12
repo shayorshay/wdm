@@ -1,0 +1,5 @@
+"Method","Name","# requests","# failures","Median response time","Average response time","Min response time","Max response time","Average Content Size","Requests/s"
+"POST","/sql/stock/item/create",94364,8776,9000,11540,3,53766,33,94364.00
+"POST","/sql/users/create",62249,1,1000,1485,3,59505,16,62249.00
+"POST","/stock/add",68722,10998,8200,11017,2,41527,1,68722.00
+"None","Total",225335,19775,5400,8603,0,59505,19,225335.00
