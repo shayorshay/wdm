@@ -111,18 +111,30 @@ app.post("/credit/subtract/:userId/:amount", async function (req, res, next) {
     res.sendStatus(200);
 });
 
-app.post("/credit/add/:userId/:amount", function (req, res, next) {
+function addFunds(userId, amount) {
+    return new Promise(function (resolve, reject) {
+        redisClient.hincrby(userId, "credit", amount, function (err, newCredit) {
+            if (err)
+                return reject(new ErrorWithCause("Encountered an error.", err));
+            
+            resolve();
+        });
+    });
+
+}
+
+app.post("/credit/add/:userId/:amount", async function (req, res, next) {
     /**
      * @type {string}
      */
     const {userId, amount} = req.params;
-
-    redisClient.hincrby(userId, "credit", amount, function (err) {
-        if (err)
-            return next(new ErrorWithCause("Encountered an error.", err));
-
-        res.sendStatus(200);
-    });
+    //let result;
+    try {
+        await addFunds(userId, amount);
+    } catch (e) {
+        return next(e);
+    }
+    res.sendStatus(200);
 });
 
-module.exports = {app, subtract};
+module.exports = {app, subtract, addFunds};
